@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { defaultWeights, rankGuides } from '../biology/scoring'
 import { explainGuide } from '../biology/explanations'
+import { recommendNuclease } from '../biology/nucleaseRecommendation'
 import { downloadText, toCsv } from '../features/export'
 import { genes, getGeneTranscripts, nucleases, organisms } from '../data/mockData'
 import type { RankedGuide, RankingWeights, WarningSeverity } from '../types/crispr'
 import type { DesignSetup } from './ExperimentWizard'
 import { TargetVisualization } from './TargetVisualization'
+import { NucleaseRecommendationCard } from './NucleaseRecommendationCard'
 
 type SortKey = 'overall' | 'activity' | 'specificity' | 'gc' | 'coverage' | 'distance' | 'warnings'
 
@@ -57,6 +59,19 @@ export function ResultsWorkspace({ setup, initialGuides, onBack }: { setup: Desi
     }), [ranked, strand, coding, exon, minimumActivity, minimumSpecificity, warningType, maximumDistance, setup.experiment, sort])
   const selected = ranked.find((guide) => guide.id === selectedId) ?? ranked[0]
   const compared = comparison.map((id) => ranked.find((guide) => guide.id === id)).filter(Boolean) as RankedGuide[]
+  const selectedRecommendation = selected ? recommendNuclease({
+    context: setup.experimentContext,
+    priority: setup.editingPriority,
+    safetyContext: setup.safetyContext,
+    specificityScore: selected.specificityScore,
+    codingOffTargetCount: selected.offTargetCandidates.filter((item) => item.annotation === 'coding exon').length,
+    guideDataQuality: 'demonstration',
+    betterGuideAvailable: ranked.some((guide) =>
+      guide.id !== selected.id
+      && guide.specificityScore >= selected.specificityScore + 8
+      && guide.offTargetCandidates.every((item) => item.annotation !== 'coding exon'),
+    ),
+  }) : null
 
   const toggleCompare = (id: string) => {
     setComparison((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < 5 ? [...current, id] : current)
@@ -84,6 +99,7 @@ export function ResultsWorkspace({ setup, initialGuides, onBack }: { setup: Desi
       </div>
 
       <div className="scientific-callout"><b>No universally best guide</b><span>Rank {ranked[0]?.rank} is the best fit for the current configurable heuristic—not a guarantee. Change experiment type or weights and the order may change.</span></div>
+      {selectedRecommendation && <NucleaseRecommendationCard recommendation={selectedRecommendation} selectedNucleaseId={setup.nucleaseId} />}
       <TargetVisualization guides={ranked} selectedId={selected?.id} experiment={setup.experiment} />
 
       <details className="weights-panel">

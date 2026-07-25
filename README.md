@@ -97,6 +97,22 @@ Specificity is a sequence-complexity heuristic. The prototype does **not** searc
 
 Structured warnings contain a type, severity, explanation, evidence, suggested interpretation, and whether they change ranking. Deterministic explanation functions report a major strength, a major weakness, experiment context, and uncertainty. They do not use an LLM and do not claim certainty.
 
+## Nuclease decision support
+
+The setup wizard asks for experiment context, editing priority, and optional future patient-use context. A transparent rule-based function then provides educational decision support:
+
+1. Look for a stronger guide with better specificity.
+2. Confirm that the guide and nuclease use a compatible PAM.
+3. Evaluate important predicted off-target sites.
+4. Consider a high-fidelity nuclease such as Sniper-Cas9 when context warrants it.
+5. Validate experimentally.
+
+Routine cultured-cell knockout, screening, activity-first, or established-system priorities generally produce an SpCas9 baseline recommendation. Specificity-first, primary/stem/transplantation cell, or therapeutic contexts increase the importance of evaluating Sniper-Cas9 or another high-fidelity Cas9. Delivery-size and alternative-PAM priorities route to compact or differently targeted nuclease options instead.
+
+Users can override the recommendation and select SpCas9, Sniper-Cas9, SpCas9-HF1, eSpCas9, HiFi Cas9, SaCas9, Cas12a, or another system. GuideWise shows a trade-off note rather than blocking expert choice.
+
+Current guide specificity and off-target records are demonstrations. They are never treated as sufficient real evidence for a guide-specific nuclease recommendation. Sniper-Cas9 is not described as universally better, clinically recommended, guaranteed to improve specificity, or a substitute for guide redesign and experimental validation.
+
 ## Export
 
 Results can be exported as CSV or JSON with setup metadata, guide sequence/PAM/strand, coordinates, cut position, scores, model name, off-target counts, warnings, explanation, software version, and mock-data status. CSV values are escaped for commas, quotes, and line breaks.

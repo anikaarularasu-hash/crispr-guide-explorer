@@ -7,9 +7,13 @@ export const organisms: Organism[] = [
 
 export const nucleases: Nuclease[] = [
   { id: 'spcas9', name: 'SpCas9', fullName: 'Streptococcus pyogenes Cas9', pam: { pattern: 'NGG', guideLength: 20, pamLength: 3, cutOffsetFromPam: 3 }, catalyticallyActive: true },
+  { id: 'sniper-cas9', name: 'Sniper-Cas9', fullName: 'Sniper-Cas9 high-fidelity SpCas9 variant', pam: { pattern: 'NGG', guideLength: 20, pamLength: 3, cutOffsetFromPam: 3 }, catalyticallyActive: true },
   { id: 'spcas9-hf1', name: 'SpCas9-HF1', fullName: 'SpCas9 high-fidelity variant 1', pam: { pattern: 'NGG', guideLength: 20, pamLength: 3, cutOffsetFromPam: 3 }, catalyticallyActive: true },
   { id: 'espcas9', name: 'eSpCas9', fullName: 'Enhanced-specificity SpCas9', pam: { pattern: 'NGG', guideLength: 20, pamLength: 3, cutOffsetFromPam: 3 }, catalyticallyActive: true },
+  { id: 'hifi-cas9', name: 'HiFi Cas9', fullName: 'High-fidelity Cas9 protein variant', pam: { pattern: 'NGG', guideLength: 20, pamLength: 3, cutOffsetFromPam: 3 }, catalyticallyActive: true },
   { id: 'sacas9', name: 'SaCas9', fullName: 'Staphylococcus aureus Cas9', pam: { pattern: 'NNGRRT', guideLength: 21, pamLength: 6, cutOffsetFromPam: 3 }, catalyticallyActive: true },
+  { id: 'cas12a', name: 'Cas12a', fullName: 'Cas12a nuclease family', pam: { pattern: 'TTTV', guideLength: 23, pamLength: 4, cutOffsetFromPam: 18 }, catalyticallyActive: true },
+  { id: 'other', name: 'Other', fullName: 'User-selected nuclease not modeled by GuideWise', pam: { pattern: 'varies', guideLength: 20, pamLength: 0, cutOffsetFromPam: 0 }, catalyticallyActive: true },
 ]
 
 const sequence = [
