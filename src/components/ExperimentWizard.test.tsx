@@ -24,4 +24,16 @@ describe('ExperimentWizard', () => {
     expect(screen.getByLabelText(/Exact intended edit position/)).toBeInTheDocument()
     expect(screen.getByLabelText(/Reference allele/)).toBeInTheDocument()
   })
+
+  it('updates educational nuclease guidance from experiment context and priority', () => {
+    render(<ExperimentWizard initialExperiment="knockout" onCancel={vi.fn()} onComplete={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByLabelText(/Transcript/), { target: { value: 'ENST-HBB-001' } })
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByLabelText(/What best describes your experiment/), { target: { value: 'stem_cells' } })
+    fireEvent.change(screen.getByLabelText(/What is your main priority/), { target: { value: 'minimize_off_targets' } })
+    expect(screen.getByRole('heading', { name: /Consider Sniper-Cas9 or another validated high-fidelity Cas9/i })).toBeInTheDocument()
+    expect(screen.getByText(/Educational decision support/i)).toBeInTheDocument()
+    expect(screen.getByText(/not guide-specific off-target evidence/i)).toBeInTheDocument()
+  })
 })

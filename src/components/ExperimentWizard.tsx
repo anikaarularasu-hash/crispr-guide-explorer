@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
-import { genes, getGeneTranscripts, nucleases, organisms } from '../data/mockData'
-import type { ExperimentType } from '../types/crispr'
+import { useEffect, useMemo, useState } from 'react'
+import { genes, getGeneTranscripts, organisms } from '../data/mockData'
+import { recommendNuclease } from '../biology/nucleaseRecommendation'
+import type { EditingPriority, ExperimentContext, ExperimentType, NucleaseId, SafetyContext } from '../types/crispr'
+import { NucleaseRecommendationCard } from './NucleaseRecommendationCard'
 
 export interface DesignSetup {
   projectName: string
@@ -9,7 +11,10 @@ export interface DesignSetup {
   assembly: string
   geneId: string
   transcriptId: string
-  nucleaseId: string
+  nucleaseId: NucleaseId
+  experimentContext: ExperimentContext
+  editingPriority: EditingPriority
+  safetyContext: SafetyContext
   desiredGuides: number
   editPosition: number
   referenceAllele: string
@@ -32,7 +37,10 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
   const [organismId, setOrganismId] = useState('human')
   const [geneId, setGeneId] = useState('hbb')
   const [transcriptId, setTranscriptId] = useState('')
-  const [nucleaseId, setNucleaseId] = useState('spcas9')
+  const [nucleaseId, setNucleaseId] = useState<NucleaseId>('spcas9')
+  const [experimentContext, setExperimentContext] = useState<ExperimentContext>('cultured_cell_knockout')
+  const [editingPriority, setEditingPriority] = useState<EditingPriority>('balanced')
+  const [safetyContext, setSafetyContext] = useState<SafetyContext>('research_only')
   const [desiredGuides, setDesiredGuides] = useState(8)
   const [editPosition, setEditPosition] = useState(5_225_520)
   const [referenceAllele, setReferenceAllele] = useState('A')
@@ -43,6 +51,12 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
   const gene = genes.find((item) => item.id === geneId)!
   const availableTranscripts = getGeneTranscripts(geneId)
   const organism = organisms.find((item) => item.id === organismId)!
+  const nucleaseRecommendation = useMemo(() => recommendNuclease({
+    context: experimentContext,
+    priority: editingPriority,
+    safetyContext,
+    guideDataQuality: 'none',
+  }), [experimentContext, editingPriority, safetyContext])
 
   useEffect(() => {
     setTranscriptId('')
@@ -55,7 +69,7 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
     else onComplete({
       projectName: `${gene.symbol} ${experiment} design`,
       experiment, organismId, assembly: organism.assemblies[0].id, geneId, transcriptId,
-      nucleaseId, desiredGuides, editPosition, referenceAllele, desiredAllele,
+      nucleaseId, experimentContext, editingPriority, safetyContext, desiredGuides, editPosition, referenceAllele, desiredAllele,
       windowStart, windowEnd, multipleGuides,
     })
   }
@@ -98,7 +112,7 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
               <label>Organism<select value={organismId} onChange={(event) => setOrganismId(event.target.value)}>{organisms.map((item) => <option value={item.id} key={item.id}>{item.scientificName} ({item.commonName})</option>)}</select></label>
               <label>Genome assembly<select value={organism.assemblies[0].id} disabled><option>{organism.assemblies[0].label}</option></select></label>
               <label>Gene<select value={geneId} onChange={(event) => setGeneId(event.target.value)}>{genes.map((item) => <option value={item.id} key={item.id}>{item.symbol} — {item.name}</option>)}</select></label>
-              <label>Cas nuclease<select value={nucleaseId} onChange={(event) => setNucleaseId(event.target.value)}>{nucleases.map((item) => <option value={item.id} key={item.id} disabled={item.id === 'sacas9'}>{item.name}{item.id === 'sacas9' ? ' — future support' : ''}</option>)}</select></label>
+              <label>Desired number of guides<input type="number" min="1" max="20" value={desiredGuides} onChange={(event) => setDesiredGuides(Number(event.target.value))} /></label>
               <label className="full-field">Transcript <span className="required">required</span>
                 <select aria-invalid={!transcriptId} value={transcriptId} onChange={(event) => setTranscriptId(event.target.value)}>
                   <option value="">Choose a transcript explicitly…</option>
@@ -118,6 +132,46 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
         {step === 3 && (
           <fieldset>
             <legend>{experimentInfo[experiment].title} details</legend>
+            <section className="experiment-context-section" aria-labelledby="experiment-context-heading">
+              <div className="context-heading"><span className="overline">EXPERIMENT CONTEXT</span><h2 id="experiment-context-heading">Match the nuclease decision to your priorities</h2><p>These answers change the educational recommendation, not the underlying evidence.</p></div>
+              <div className="form-grid context-fields">
+                <label>What best describes your experiment?
+                  <select value={experimentContext} onChange={(event) => setExperimentContext(event.target.value as ExperimentContext)}>
+                    <option value="cultured_cell_knockout">Standard gene knockout in cultured cells</option>
+                    <option value="crispr_screen">CRISPR screening experiment</option>
+                    <option value="exploratory_research">Early-stage academic or exploratory research</option>
+                    <option value="primary_cells">Editing primary cells</option>
+                    <option value="stem_cells">Editing stem cells</option>
+                    <option value="transplantation_cells">Editing cells intended for transplantation</option>
+                    <option value="preclinical_therapy">Preclinical therapeutic research</option>
+                    <option value="clinical_therapy">Clinical or patient-directed therapeutic development</option>
+                    <option value="high_off_target_risk">High off-target-risk target</option>
+                    <option value="other">Other / Not sure</option>
+                  </select>
+                </label>
+                <label>What is your main priority?
+                  <select value={editingPriority} onChange={(event) => setEditingPriority(event.target.value as EditingPriority)}>
+                    <option value="maximize_activity">Highest possible on-target editing activity</option>
+                    <option value="minimize_off_targets">Lowest possible off-target risk</option>
+                    <option value="balanced">Balance activity and specificity</option>
+                    <option value="established_system">Use the most established and widely studied system</option>
+                    <option value="small_delivery">Small nuclease for delivery constraints</option>
+                    <option value="alternative_pam">Access a target without a suitable NGG PAM</option>
+                    <option value="unsure">Not sure</option>
+                  </select>
+                </label>
+                <label className="full-field">Could these edited cells or tissues eventually be used in a patient? <span className="optional">optional safety context</span>
+                  <select value={safetyContext} onChange={(event) => setSafetyContext(event.target.value as SafetyContext)}>
+                    <option value="research_only">No — research use only</option>
+                    <option value="possible_therapy">Possibly — early therapeutic research</option>
+                    <option value="preclinical">Yes — preclinical or translational development</option>
+                    <option value="clinical">Yes — clinical development</option>
+                    <option value="unsure">Not sure</option>
+                  </select>
+                </label>
+              </div>
+              <NucleaseRecommendationCard recommendation={nucleaseRecommendation} selectedNucleaseId={nucleaseId} onSelect={setNucleaseId} />
+            </section>
             {experiment === 'knockout' && (
               <div className="form-grid">
                 <label>Desired number of guides<input type="number" min="1" max="20" value={desiredGuides} onChange={(e) => setDesiredGuides(Number(e.target.value))} /></label>

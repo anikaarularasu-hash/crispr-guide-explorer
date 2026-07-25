@@ -1,4 +1,25 @@
 export type ExperimentType = 'knockout' | 'knockin' | 'crispra' | 'crispri'
+export type ExperimentContext =
+  | 'cultured_cell_knockout'
+  | 'crispr_screen'
+  | 'exploratory_research'
+  | 'primary_cells'
+  | 'stem_cells'
+  | 'transplantation_cells'
+  | 'preclinical_therapy'
+  | 'clinical_therapy'
+  | 'high_off_target_risk'
+  | 'other'
+export type EditingPriority =
+  | 'maximize_activity'
+  | 'minimize_off_targets'
+  | 'balanced'
+  | 'established_system'
+  | 'small_delivery'
+  | 'alternative_pam'
+  | 'unsure'
+export type SafetyContext = 'research_only' | 'possible_therapy' | 'preclinical' | 'clinical' | 'unsure'
+export type NucleaseId = 'spcas9' | 'sniper-cas9' | 'spcas9-hf1' | 'espcas9' | 'hifi-cas9' | 'sacas9' | 'cas12a' | 'other'
 export type Strand = '+' | '-'
 export type WarningSeverity = 'information' | 'caution' | 'high'
 export type CodingStatus = 'coding' | 'utr' | 'intron' | 'promoter'
@@ -75,11 +96,22 @@ export interface PamRule {
 }
 
 export interface Nuclease {
-  id: 'spcas9' | 'spcas9-hf1' | 'espcas9' | 'sacas9'
+  id: NucleaseId
   name: string
   fullName: string
   pam: PamRule
   catalyticallyActive: boolean
+}
+
+export interface NucleaseRecommendation {
+  primaryRecommendation: string
+  recommendedNucleaseId?: NucleaseId
+  alternatives: string[]
+  reasons: string[]
+  cautions: string[]
+  nextStep: string
+  confidence: 'low' | 'moderate' | 'high'
+  dataBasis: 'context-only' | 'demonstration-guide-data' | 'real-guide-data'
 }
 
 export interface OffTargetCandidate {
