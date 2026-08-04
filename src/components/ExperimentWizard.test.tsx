@@ -42,7 +42,7 @@ describe('ExperimentWizard', () => {
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.change(screen.getByLabelText(/^Organism/), { target: { value: 'zebrafish' } })
     expect(screen.getByLabelText(/Reference genome assembly/)).toHaveValue('GRCz11')
-    expect(screen.getByRole('combobox', { name: 'Gene' })).toHaveValue('zfish-tp53')
+    expect(screen.getByLabelText(/Gene symbol or name/)).toHaveValue('tp53')
     expect(screen.getByText(/chromosome sequence/i).parentElement).toHaveTextContent('5 region loaded')
     expect(screen.getByLabelText(/Transcript/)).toHaveValue('')
   })
@@ -55,5 +55,34 @@ describe('ExperimentWizard', () => {
     expect(screen.queryByLabelText(/Transcript/)).not.toBeInTheDocument()
     expect(screen.getByText('Prokaryotic gene-feature mode')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled()
+  })
+
+  it('automatically displays chromosome context without a chromosome input in gene mode', () => {
+    render(<ExperimentWizard initialExperiment="knockout" onCancel={vi.fn()} onComplete={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByLabelText(/Gene symbol or name/), { target: { value: 'BRCA1' } })
+    expect(screen.getByRole('heading', { name: 'Target summary' })).toBeInTheDocument()
+    expect(screen.getByText(/NC_000017.11/)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/^Chromosome$/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /about chromosome/i })).toHaveAttribute('title', expect.stringContaining('determines the chromosome automatically'))
+  })
+
+  it('shows a clear error for an unknown gene', () => {
+    render(<ExperimentWizard initialExperiment="knockout" onCancel={vi.fn()} onComplete={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByLabelText(/Gene symbol or name/), { target: { value: 'NOT_A_GENE' } })
+    expect(screen.getByRole('alert')).toHaveTextContent(/No gene named/)
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+  })
+
+  it('requires region coordinates and does not invent raw-sequence annotations', () => {
+    render(<ExperimentWizard initialExperiment="knockout" onCancel={vi.fn()} onComplete={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByLabelText(/Target input mode/), { target: { value: 'genomic_region' } })
+    expect(screen.getByText('Enter a chromosome or sequence identifier.')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/Target input mode/), { target: { value: 'raw_sequence' } })
+    fireEvent.change(screen.getByLabelText(/Raw DNA sequence/), { target: { value: 'ATGCTGACCTGACTGACTGATGG' } })
+    expect(screen.getByText(/candidate SpCas9 guide/)).toBeInTheDocument()
+    expect(screen.getByText(/cannot invent chromosome location/)).toBeInTheDocument()
   })
 })

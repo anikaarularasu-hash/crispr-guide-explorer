@@ -8,6 +8,7 @@ import type { RankedGuide, RankingWeights, WarningSeverity } from '../types/cris
 import type { DesignSetup } from './ExperimentWizard'
 import { TargetVisualization } from './TargetVisualization'
 import { NucleaseRecommendationCard } from './NucleaseRecommendationCard'
+import { geneLocation } from '../biology/targeting'
 
 type SortKey = 'overall' | 'activity' | 'specificity' | 'gc' | 'coverage' | 'distance' | 'warnings'
 
@@ -85,6 +86,7 @@ export function ResultsWorkspace({ setup, initialGuides, onBack }: { setup: Desi
     assembly: setup.assembly,
     gene: gene.symbol,
     transcript: transcript.id,
+    targetLocation: geneLocation(gene),
     nuclease: nuclease.name,
     guide,
     mockData: true,

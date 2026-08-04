@@ -24,7 +24,10 @@ export const organisms: Organism[] = [
     id: 'human', scientificName: 'Homo sapiens', commonName: 'Human', category: 'mammals', genomeOrganization: 'eukaryotic',
     supportsTranscriptAnalysis: true, supportsAlternativeSplicing: true,
     annotationNote: 'Transcript, exon, and isoform-aware analysis is enabled.',
-    assemblies: [{ id: 'GRCh38', label: 'GRCh38', accession: 'GCA_000001405.29', source: 'Genome Reference Consortium / Ensembl', provenance: 'demonstration' }],
+    assemblies: [
+      { id: 'GRCh38', label: 'GRCh38.p14', accession: 'GCA_000001405.29', source: 'Genome Reference Consortium / Ensembl', provenance: 'demonstration' },
+      { id: 'GRCh37', label: 'GRCh37.p13', accession: 'GCA_000001405.14', source: 'Genome Reference Consortium / Ensembl', provenance: 'demonstration' },
+    ],
   },
   {
     id: 'mouse', scientificName: 'Mus musculus', commonName: 'Mouse', category: 'mammals', genomeOrganization: 'eukaryotic',
@@ -99,23 +102,27 @@ interface GeneSeed {
   symbol: string
   name: string
   chromosome: string
+  sequenceAccession?: string
   genomicStart: number
   alternativeTranscripts: boolean
 }
 
 const geneSeeds: GeneSeed[] = [
-  { id: 'hbb', organismId: 'human', assembly: 'GRCh38', symbol: 'HBB', name: 'Hemoglobin subunit beta', chromosome: '11', genomicStart: 5_225_464, alternativeTranscripts: true },
-  { id: 'cftr', organismId: 'human', assembly: 'GRCh38', symbol: 'CFTR', name: 'CF transmembrane conductance regulator', chromosome: '7', genomicStart: 117_480_025, alternativeTranscripts: true },
-  { id: 'pcsk9', organismId: 'human', assembly: 'GRCh38', symbol: 'PCSK9', name: 'Proprotein convertase subtilisin/kexin type 9', chromosome: '1', genomicStart: 55_505_221, alternativeTranscripts: true },
-  { id: 'tp53', organismId: 'human', assembly: 'GRCh38', symbol: 'TP53', name: 'Tumor protein p53', chromosome: '17', genomicStart: 7_668_401, alternativeTranscripts: true },
-  { id: 'mouse-trp53', organismId: 'mouse', assembly: 'GRCm39', symbol: 'Trp53', name: 'Transformation related protein 53', chromosome: '11', genomicStart: 69_569_000, alternativeTranscripts: true },
+  { id: 'hbb', organismId: 'human', assembly: 'GRCh38', symbol: 'HBB', name: 'Hemoglobin subunit beta', chromosome: '11', sequenceAccession: 'NC_000011.10', genomicStart: 5_225_464, alternativeTranscripts: true },
+  { id: 'brca1', organismId: 'human', assembly: 'GRCh38', symbol: 'BRCA1', name: 'BRCA1 DNA repair associated', chromosome: '17', sequenceAccession: 'NC_000017.11', genomicStart: 43_044_295, alternativeTranscripts: true },
+  { id: 'cftr', organismId: 'human', assembly: 'GRCh38', symbol: 'CFTR', name: 'CF transmembrane conductance regulator', chromosome: '7', sequenceAccession: 'NC_000007.14', genomicStart: 117_480_025, alternativeTranscripts: true },
+  { id: 'pcsk9', organismId: 'human', assembly: 'GRCh38', symbol: 'PCSK9', name: 'Proprotein convertase subtilisin/kexin type 9', chromosome: '1', sequenceAccession: 'NC_000001.11', genomicStart: 55_505_221, alternativeTranscripts: true },
+  { id: 'tp53', organismId: 'human', assembly: 'GRCh38', symbol: 'TP53', name: 'Tumor protein p53', chromosome: '17', sequenceAccession: 'NC_000017.11', genomicStart: 7_668_401, alternativeTranscripts: true },
+  { id: 'hbb-grch37', organismId: 'human', assembly: 'GRCh37', symbol: 'HBB', name: 'Hemoglobin subunit beta', chromosome: '11', sequenceAccession: 'NC_000011.9', genomicStart: 5_246_696, alternativeTranscripts: true },
+  { id: 'brca1-grch37', organismId: 'human', assembly: 'GRCh37', symbol: 'BRCA1', name: 'BRCA1 DNA repair associated', chromosome: '17', sequenceAccession: 'NC_000017.10', genomicStart: 41_196_312, alternativeTranscripts: true },
+  { id: 'mouse-trp53', organismId: 'mouse', assembly: 'GRCm39', symbol: 'Trp53', name: 'Transformation related protein 53', chromosome: '11', sequenceAccession: 'NC_000077.7', genomicStart: 69_569_000, alternativeTranscripts: true },
   { id: 'rat-tp53', organismId: 'rat', assembly: 'mRatBN7.2', symbol: 'Tp53', name: 'Tumor protein p53', chromosome: '10', genomicStart: 56_000_000, alternativeTranscripts: true },
   { id: 'zfish-tp53', organismId: 'zebrafish', assembly: 'GRCz11', symbol: 'tp53', name: 'Tumor protein p53', chromosome: '5', genomicStart: 35_000_000, alternativeTranscripts: true },
   { id: 'fly-white', organismId: 'fruit-fly', assembly: 'BDGP6.46', symbol: 'white', name: 'white', chromosome: 'X', genomicStart: 2_790_000, alternativeTranscripts: true },
   { id: 'worm-unc54', organismId: 'c-elegans', assembly: 'WBcel235', symbol: 'unc-54', name: 'Myosin class II heavy chain', chromosome: 'I', genomicStart: 14_800_000, alternativeTranscripts: true },
   { id: 'arabidopsis-pds3', organismId: 'arabidopsis', assembly: 'TAIR10', symbol: 'PDS3', name: 'Phytoene desaturation 3', chromosome: '4', genomicStart: 8_200_000, alternativeTranscripts: true },
   { id: 'yeast-ade2', organismId: 'yeast', assembly: 'R64-1-1', symbol: 'ADE2', name: 'Phosphoribosylaminoimidazole carboxylase', chromosome: 'XV', genomicStart: 560_000, alternativeTranscripts: false },
-  { id: 'ecoli-lacz', organismId: 'e-coli', assembly: 'ASM584v2', symbol: 'lacZ', name: 'Beta-galactosidase', chromosome: 'NC_000913.3', genomicStart: 360_000, alternativeTranscripts: false },
+  { id: 'ecoli-lacz', organismId: 'e-coli', assembly: 'ASM584v2', symbol: 'lacZ', name: 'Beta-galactosidase', chromosome: 'chromosome', sequenceAccession: 'NC_000913.3', genomicStart: 360_000, alternativeTranscripts: false },
 ]
 
 function transcriptIdsFor(seed: GeneSeed): string[] {
@@ -170,6 +177,7 @@ export const genes: Gene[] = geneSeeds.map((seed, index) => ({
   symbol: seed.symbol,
   name: seed.name,
   chromosome: seed.chromosome,
+  sequenceAccession: seed.sequenceAccession,
   genomicStart: seed.genomicStart,
   genomicEnd: seed.genomicStart + sequence.length - 1,
   strand: index % 2 === 0 ? '+' : '-',
@@ -185,6 +193,14 @@ export function getGenesForAssembly(organismId: string, assemblyId: string): Gen
   return genes.filter((item) => item.organismId === organismId && item.assembly === assemblyId)
 }
 
+export function resolveGeneRecords(organismId: string, assemblyId: string, query: string): Gene[] {
+  const normalized = query.trim().toLocaleLowerCase()
+  if (!normalized) return []
+  return getGenesForAssembly(organismId, assemblyId).filter((item) =>
+    item.symbol.toLocaleLowerCase() === normalized || item.name.toLocaleLowerCase() === normalized,
+  )
+}
+
 export function getGeneTranscripts(geneId: string): Transcript[] {
   return transcripts.filter((item) => item.geneId === geneId)
 }
@@ -194,6 +210,7 @@ export const demonstrationGenomeProvider: GenomeDataProvider = {
   provenance: 'demonstration',
   async getOrganisms() { return organisms },
   async getGenes({ organismId, assemblyId }) { return getGenesForAssembly(organismId, assemblyId) },
+  async resolveGenes({ organismId, assemblyId, query }) { return resolveGeneRecords(organismId, assemblyId, query) },
   async getTranscripts({ organismId, assemblyId, geneId }) {
     return transcripts.filter((item) => item.organismId === organismId && item.assemblyId === assemblyId && item.geneId === geneId)
   },

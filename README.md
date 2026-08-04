@@ -69,6 +69,10 @@ The target wizard groups built-in research organisms by mammals, fish, insects, 
 
 The included provider uses small, synthetic demonstration records rather than downloading complete reference genomes. Every record carries organism and assembly identifiers so data from different references cannot be mixed silently.
 
+For normal gene-based targeting, the user enters a gene symbol or name and GuideWise resolves the chromosome, sequence accession, genomic coordinates, strand, transcription start site, and matching transcripts from the selected organism-and-assembly annotation set. Chromosome is displayed as read-only context; it is not a beginner input or a guide-quality score. Unknown and ambiguous records are never resolved by guessing.
+
+The optional targeting-mode selector also exposes transcript-ID, genomic-region, raw-sequence, and custom-genome paths. Genomic regions validate the sequence identifier and coordinate interval. Raw DNA uses the same two-strand SpCas9 PAM scanner but deliberately leaves chromosome, transcript, exon, and genome-wide specificity metadata unset. Arbitrary interval retrieval and custom FASTA plus GFF3/GTF parsing remain future provider integrations.
+
 Eukaryotic records enable explicit transcript selection, exon analysis, and transcript-coverage scoring. Bacterial records use a single gene/CDS feature model and suppress intron, exon-ranking, and alternative-splicing interpretations. Guide discovery, PAM matching, and nuclease recommendations remain shared and organism-agnostic.
 
 The domain layer includes custom-genome upload types for a FASTA genome plus GTF/GFF annotations. The disabled upload controls document that planned path; parsing, indexing, validation, and persistence are not implemented in this prototype.
@@ -139,7 +143,7 @@ Current guide specificity and off-target records are demonstrations. They are ne
 
 ## Export
 
-Results can be exported as CSV or JSON with setup metadata, guide sequence/PAM/strand, coordinates, cut position, scores, model name, off-target counts, warnings, explanation, software version, and mock-data status. CSV values are escaped for commas, quotes, and line breaks.
+Results can be exported as CSV or JSON with setup metadata, target chromosome, assembly, sequence accession, target coordinates and strand, guide sequence/PAM/strand, cut position, scores, model name, off-target counts, warnings, explanation, software version, and mock-data status. CSV values are escaped for commas, quotes, and line breaks.
 
 ## Scientific limitations
 

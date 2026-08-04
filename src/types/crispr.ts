@@ -26,6 +26,27 @@ export type CodingStatus = 'coding' | 'utr' | 'intron' | 'promoter'
 export type OrganismCategory = 'mammals' | 'fish' | 'insects' | 'nematodes' | 'plants' | 'fungi' | 'bacteria'
 export type GenomeOrganization = 'eukaryotic' | 'prokaryotic'
 export type DataProvenance = 'demonstration' | 'uploaded' | 'remote-reference'
+export type TargetInputMode = 'gene' | 'transcript' | 'genomic_region' | 'raw_sequence' | 'custom_genome'
+
+export interface GenomicLocation {
+  assemblyId: string
+  chromosomeLabel: string
+  sequenceAccession?: string
+  start: number
+  end: number
+  strand: Strand
+}
+
+export interface BiologicalTarget {
+  inputMode: TargetInputMode
+  organismId: string
+  assemblyId: string
+  geneId?: string
+  geneSymbol?: string
+  transcriptId?: string
+  location?: GenomicLocation
+  rawSequence?: string
+}
 
 export interface Organism {
   id: string
@@ -92,6 +113,7 @@ export interface Gene {
   symbol: string
   name: string
   chromosome: string
+  sequenceAccession?: string
   genomicStart: number
   genomicEnd: number
   strand: Strand
@@ -282,6 +304,7 @@ export interface ExportRecord {
   assembly: string
   gene: string
   transcript: string
+  targetLocation: GenomicLocation
   nuclease: string
   guide: RankedGuide
   mockData: boolean
@@ -298,6 +321,7 @@ export interface TranscriptProvider {
 
 export interface GeneAnnotationProvider {
   getGenes(request: { organismId: string; assemblyId: string }): Promise<Gene[]>
+  resolveGenes(request: { organismId: string; assemblyId: string; query: string }): Promise<Gene[]>
 }
 
 export interface GenomeDataProvider extends SequenceProvider, TranscriptProvider, GeneAnnotationProvider {
