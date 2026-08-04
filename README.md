@@ -51,6 +51,28 @@ src/
 
 React components present data and manage local interaction. They do not contain biological scoring rules. Pure TypeScript functions can be tested without rendering the interface. Provider interfaces define future boundaries for real sequences, transcripts, protein annotations, activity models, off-target searches, and variants.
 
+## Organisms and reference assemblies
+
+The target wizard groups built-in research organisms by mammals, fish, insects, nematodes, plants, fungi, and bacteria. Selecting an organism automatically switches the available assembly, gene annotations, transcript models, and demonstration chromosome sequence region.
+
+| Organism | Built-in assembly |
+| --- | --- |
+| *Homo sapiens* | GRCh38 |
+| *Mus musculus* | GRCm39 |
+| *Rattus norvegicus* | mRatBN7.2 |
+| *Danio rerio* | GRCz11 |
+| *Drosophila melanogaster* | BDGP6.46 |
+| *Caenorhabditis elegans* | WBcel235 |
+| *Arabidopsis thaliana* | TAIR10 |
+| *Saccharomyces cerevisiae* | R64-1-1 |
+| *Escherichia coli* K-12 MG1655 | ASM584v2 |
+
+The included provider uses small, synthetic demonstration records rather than downloading complete reference genomes. Every record carries organism and assembly identifiers so data from different references cannot be mixed silently.
+
+Eukaryotic records enable explicit transcript selection, exon analysis, and transcript-coverage scoring. Bacterial records use a single gene/CDS feature model and suppress intron, exon-ranking, and alternative-splicing interpretations. Guide discovery, PAM matching, and nuclease recommendations remain shared and organism-agnostic.
+
+The domain layer includes custom-genome upload types for a FASTA genome plus GTF/GFF annotations. The disabled upload controls document that planned path; parsing, indexing, validation, and persistence are not implemented in this prototype.
+
 ## Guide-generation logic
 
 GuideWise currently implements SpCas9 guide discovery for demonstration sequences:
@@ -73,6 +95,8 @@ GC content is `(G + C bases) / guide length × 100`. A common initial range is r
 ## Transcript coverage and exon suitability
 
 Transcript coverage is the percentage of selected relevant transcripts containing the targeted region. The mock provider distinguishes canonical and alternative protein-coding transcripts and marks exons as constitutive or alternative. A shared coding exon may suit a broad knockout; a lower-coverage exon may be intentional for isoform-specific work. The first or last exon is not automatically preferred.
+
+This metric is only applied to supported eukaryotic transcript models. In bacterial mode, GuideWise reports the selected CDS feature and does not reinterpret it as an exon or alternative transcript.
 
 ## Experiment-specific scoring
 

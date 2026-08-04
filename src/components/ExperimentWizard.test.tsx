@@ -36,4 +36,24 @@ describe('ExperimentWizard', () => {
     expect(screen.getByText(/Educational decision support/i)).toBeInTheDocument()
     expect(screen.getByText(/not guide-specific off-target evidence/i)).toBeInTheDocument()
   })
+
+  it('loads the assembly and annotations for a selected organism', () => {
+    render(<ExperimentWizard initialExperiment="knockout" onCancel={vi.fn()} onComplete={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByLabelText(/^Organism/), { target: { value: 'zebrafish' } })
+    expect(screen.getByLabelText(/Reference genome assembly/)).toHaveValue('GRCz11')
+    expect(screen.getByRole('combobox', { name: 'Gene' })).toHaveValue('zfish-tp53')
+    expect(screen.getByText(/chromosome sequence/i).parentElement).toHaveTextContent('5 region loaded')
+    expect(screen.getByLabelText(/Transcript/)).toHaveValue('')
+  })
+
+  it('uses prokaryotic mode without requiring transcript selection', () => {
+    render(<ExperimentWizard initialExperiment="knockout" onCancel={vi.fn()} onComplete={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.change(screen.getByLabelText(/^Organism/), { target: { value: 'e-coli' } })
+    expect(screen.getByLabelText(/Reference genome assembly/)).toHaveValue('ASM584v2')
+    expect(screen.queryByLabelText(/Transcript/)).not.toBeInTheDocument()
+    expect(screen.getByText('Prokaryotic gene-feature mode')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled()
+  })
 })

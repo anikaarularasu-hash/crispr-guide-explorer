@@ -99,8 +99,14 @@ export function ResultsWorkspace({ setup, initialGuides, onBack }: { setup: Desi
       </div>
 
       <div className="scientific-callout"><b>No universally best guide</b><span>Rank {ranked[0]?.rank} is the best fit for the current configurable heuristic—not a guarantee. Change experiment type or weights and the order may change.</span></div>
+      <div className={`organism-mode-callout ${organism.genomeOrganization}`}>
+        <b>{organism.genomeOrganization === 'prokaryotic' ? 'Bacterial analysis mode' : 'Eukaryotic analysis mode'}</b>
+        <span>{organism.genomeOrganization === 'prokaryotic'
+          ? 'Guide discovery and PAM search use the same organism-agnostic pipeline. Transcript coverage and exon ranking are not interpreted; review operon structure, polarity, and local regulation separately.'
+          : `Transcript coverage and exon analysis are enabled${organism.supportsAlternativeSplicing ? ', including alternative-transcript context' : ''}.`}</span>
+      </div>
       {selectedRecommendation && <NucleaseRecommendationCard recommendation={selectedRecommendation} selectedNucleaseId={setup.nucleaseId} />}
-      <TargetVisualization guides={ranked} selectedId={selected?.id} experiment={setup.experiment} />
+      <TargetVisualization guides={ranked} selectedId={selected?.id} experiment={setup.experiment} genomeOrganization={organism.genomeOrganization} />
 
       <details className="weights-panel">
         <summary>Advanced ranking weights <span>configurable heuristics, not universal scientific truth</span></summary>
@@ -113,10 +119,10 @@ export function ResultsWorkspace({ setup, initialGuides, onBack }: { setup: Desi
       </details>
 
       <div className="filter-bar" aria-label="Guide filters">
-        <label>Sort by<select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}><option value="overall">Overall score</option><option value="activity">Activity</option><option value="specificity">Specificity</option><option value="gc">GC content</option><option value="coverage">Transcript coverage</option><option value="distance">Cut-to-edit distance</option><option value="warnings">Warning severity</option></select></label>
+        <label>Sort by<select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}><option value="overall">Overall score</option><option value="activity">Activity</option><option value="specificity">Specificity</option><option value="gc">GC content</option>{organism.supportsTranscriptAnalysis && <option value="coverage">Transcript coverage</option>}<option value="distance">Cut-to-edit distance</option><option value="warnings">Warning severity</option></select></label>
         <label>Strand<select value={strand} onChange={(e) => setStrand(e.target.value as typeof strand)}><option value="all">Both strands</option><option value="+">+ strand</option><option value="-">− strand</option></select></label>
         <label>Region<select value={coding} onChange={(e) => setCoding(e.target.value as typeof coding)}><option value="all">All regions</option><option value="coding">Coding</option><option value="noncoding">Noncoding</option></select></label>
-        <label>Exon<select value={exon} onChange={(e) => setExon(e.target.value)}><option value="all">All exons</option>{[...new Set(ranked.map((guide) => guide.exonId).filter((id): id is string => Boolean(id)))].map((id) => <option value={id} key={id}>{id}</option>)}</select></label>
+        {organism.supportsTranscriptAnalysis && <label>Exon<select value={exon} onChange={(e) => setExon(e.target.value)}><option value="all">All exons</option>{[...new Set(ranked.map((guide) => guide.exonId).filter((id): id is string => Boolean(id)))].map((id) => <option value={id} key={id}>{id}</option>)}</select></label>}
         <label>Min. activity<input type="number" min="0" max="100" value={minimumActivity} onChange={(e) => setMinimumActivity(Number(e.target.value))} /></label>
         <label>Min. specificity<input type="number" min="0" max="100" value={minimumSpecificity} onChange={(e) => setMinimumSpecificity(Number(e.target.value))} /></label>
         <label>Warning<select value={warningType} onChange={(e) => setWarningType(e.target.value)}><option value="all">Any warning</option><option value="low-gc">Low GC</option><option value="high-gc">High GC</option><option value="low-coverage">Low coverage</option><option value="coding-off-target">Coding off-target</option><option value="recutting-risk">Recutting risk</option></select></label>
@@ -127,7 +133,7 @@ export function ResultsWorkspace({ setup, initialGuides, onBack }: { setup: Desi
       <div className="table-wrap">
         <table className="guide-table">
           <caption className="sr-only">Ranked demonstration guide RNA candidates</caption>
-          <thead><tr><th>Compare</th><th>Rank</th><th>Guide sequence / PAM</th><th>Location</th><th>Cut</th><th>GC</th><th>Activity <MetricHelp>activity</MetricHelp></th><th>Specificity <MetricHelp>specificity</MetricHelp></th><th>Coverage <MetricHelp>transcript coverage</MetricHelp></th><th>Fit <MetricHelp>experiment fit</MetricHelp></th><th>Overall <MetricHelp>overall score</MetricHelp></th><th>Warnings</th></tr></thead>
+          <thead><tr><th>Compare</th><th>Rank</th><th>Guide sequence / PAM</th><th>Location</th><th>Cut</th><th>GC</th><th>Activity <MetricHelp>activity</MetricHelp></th><th>Specificity <MetricHelp>specificity</MetricHelp></th><th>{organism.supportsTranscriptAnalysis ? <>Coverage <MetricHelp>transcript coverage</MetricHelp></> : 'Gene feature'}</th><th>Fit <MetricHelp>experiment fit</MetricHelp></th><th>Overall <MetricHelp>overall score</MetricHelp></th><th>Warnings</th></tr></thead>
           <tbody>
             {visible.map((guide) => (
               <tr key={guide.id} className={guide.id === selected?.id ? 'selected-row' : ''} onClick={() => setSelectedId(guide.id)}>
@@ -139,7 +145,7 @@ export function ResultsWorkspace({ setup, initialGuides, onBack }: { setup: Desi
                 <td>{guide.gcContent.toFixed(0)}%</td>
                 <td><Score value={guide.onTargetScore} label="Activity" /></td>
                 <td><Score value={guide.specificityScore} label="Specificity" /></td>
-                <td>{guide.transcriptCoverage.toFixed(0)}%<small>{guide.transcriptIds.length}/{getGeneTranscripts(gene.id).length} selected</small></td>
+                <td>{organism.supportsTranscriptAnalysis ? <>{guide.transcriptCoverage.toFixed(0)}%<small>{guide.transcriptIds.length}/{getGeneTranscripts(gene.id).length} selected</small></> : <>CDS<small>transcript coverage not applied</small></>}</td>
                 <td><Score value={guide.experimentLocationScore} label="Experiment fit" /></td>
                 <td><strong className="overall-score">{guide.overallScore}</strong></td>
                 <td><span className={`warning-count ${guide.warnings.some((w) => w.severity === 'high') ? 'has-high' : ''}`}>{guide.warnings.filter((w) => w.changesRanking).length} <span>review</span></span></td>
@@ -150,19 +156,19 @@ export function ResultsWorkspace({ setup, initialGuides, onBack }: { setup: Desi
         {visible.length === 0 && <div className="empty-state"><b>No guides match these filters.</b><span>Lower a threshold or include both strands and region types.</span></div>}
       </div>
 
-      {selected && <GuideDetail guide={selected} geneSymbol={gene.symbol} transcriptId={transcript.id} />}
+      {selected && <GuideDetail guide={selected} geneSymbol={gene.symbol} transcriptId={transcript.id} supportsTranscriptAnalysis={organism.supportsTranscriptAnalysis} />}
       {showComparison && <Comparison guides={compared} onClose={() => setShowComparison(false)} />}
     </section>
   )
 }
 
-function GuideDetail({ guide, geneSymbol, transcriptId }: { guide: RankedGuide; geneSymbol: string; transcriptId: string }) {
+function GuideDetail({ guide, geneSymbol, transcriptId, supportsTranscriptAnalysis }: { guide: RankedGuide; geneSymbol: string; transcriptId: string; supportsTranscriptAnalysis: boolean }) {
   return (
     <aside className="detail-panel" aria-labelledby="detail-heading">
       <div className="detail-header"><div><span className="overline">SELECTED GUIDE · RANK {guide.rank}</span><h2 id="detail-heading"><code>{guide.sequence}</code><mark>{guide.pamSequence}</mark></h2></div><strong className="detail-score">{guide.overallScore}<small>heuristic fit</small></strong></div>
       <div className="detail-grid">
-        <section><h3>Target & cleavage</h3><dl><div><dt>Gene / transcript</dt><dd>{geneSymbol} · {transcriptId}</dd></div><div><dt>Genomic orientation</dt><dd>{guide.strand} strand <span title="Strand indicates genomic orientation. It does not by itself determine whether a guide is better.">ⓘ</span></dd></div><div><dt>Coordinates</dt><dd>{guide.chromosome}:{guide.genomicStart}–{guide.genomicEnd}</dd></div><div><dt>Expected cut</dt><dd>{guide.cutPosition} (approximate)</dd></div><div><dt>Target region</dt><dd>{guide.exonId ?? guide.codingStatus}</dd></div><div><dt>Protein region</dt><dd>{guide.proteinPosition ? `${guide.proteinPosition}% through protein` : 'Not applicable'}</dd></div></dl></section>
-        <section><h3>Transparent metrics</h3><dl><div><dt>GC content</dt><dd>{guide.gcContent.toFixed(1)}% = {(guide.sequence.match(/[GC]/g) ?? []).length}/20 G or C bases</dd></div><div><dt>Activity</dt><dd>{guide.onTargetScore}/100 · demonstration heuristic</dd></div><div><dt>Specificity</dt><dd>{guide.specificityScore}/100 · no genome-wide search</dd></div><div><dt>Transcript coverage</dt><dd>{guide.transcriptCoverage}% · {guide.transcriptIds.join(', ')}</dd></div><div><dt>Distance from TSS</dt><dd>{guide.distanceFromTss} bp</dd></div><div><dt>Distance from edit</dt><dd>{guide.distanceFromEdit ?? 'Not applicable'} bp</dd></div></dl></section>
+        <section><h3>Target & cleavage</h3><dl><div><dt>{supportsTranscriptAnalysis ? 'Gene / transcript' : 'Gene / feature'}</dt><dd>{geneSymbol} · {transcriptId}</dd></div><div><dt>Genomic orientation</dt><dd>{guide.strand} strand <span title="Strand indicates genomic orientation. It does not by itself determine whether a guide is better.">ⓘ</span></dd></div><div><dt>Coordinates</dt><dd>{guide.chromosome}:{guide.genomicStart}–{guide.genomicEnd}</dd></div><div><dt>Expected cut</dt><dd>{guide.cutPosition} (approximate)</dd></div><div><dt>Target region</dt><dd>{guide.exonId ?? guide.codingStatus}</dd></div><div><dt>Protein region</dt><dd>{guide.proteinPosition ? `${guide.proteinPosition}% through protein` : 'Not applicable'}</dd></div></dl></section>
+        <section><h3>Transparent metrics</h3><dl><div><dt>GC content</dt><dd>{guide.gcContent.toFixed(1)}% = {(guide.sequence.match(/[GC]/g) ?? []).length}/20 G or C bases</dd></div><div><dt>Activity</dt><dd>{guide.onTargetScore}/100 · demonstration heuristic</dd></div><div><dt>Specificity</dt><dd>{guide.specificityScore}/100 · no genome-wide search</dd></div>{supportsTranscriptAnalysis ? <div><dt>Transcript coverage</dt><dd>{guide.transcriptCoverage}% · {guide.transcriptIds.join(', ')}</dd></div> : <div><dt>Gene feature model</dt><dd>Single CDS · exon coverage not applied</dd></div>}<div><dt>Distance from TSS</dt><dd>{guide.distanceFromTss} bp</dd></div><div><dt>Distance from edit</dt><dd>{guide.distanceFromEdit ?? 'Not applicable'} bp</dd></div></dl></section>
       </div>
       <section className="recommendation"><h3>Why this guide ranks here</h3><p>{guide.explanation}</p></section>
       <section className="warnings-section"><h3>Warnings and evidence</h3><div className="warning-list">{guide.warnings.map((warning) => <article className={`warning warning-${warning.severity}`} key={warning.type}><span>{warning.severity === 'high' ? '!' : warning.severity === 'caution' ? '△' : 'i'}</span><div><strong>{warning.title}</strong><p>{warning.explanation}</p><small>Evidence: {warning.evidence}. {warning.interpretation}</small></div></article>)}</div></section>

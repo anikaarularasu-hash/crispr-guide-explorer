@@ -31,8 +31,9 @@ export function createRankedGuides(
     const genomicEnd = gene.genomicStart + guide.localEnd
     const cutPosition = gene.genomicStart + guide.cutPosition
     const exon = transcript.exons.find((item) => guide.localStart >= item.genomicStart && guide.localStart <= item.genomicEnd)
-    const coverage = exon?.constitutive ? 100 : exon ? 50 : 35
-    const codingStatus = exon?.codingStatus ?? (guide.localStart < 32 ? 'promoter' : 'intron')
+    const prokaryotic = gene.genomeOrganization === 'prokaryotic'
+    const coverage = prokaryotic ? 100 : exon?.constitutive ? 100 : exon ? 50 : 35
+    const codingStatus = prokaryotic ? 'coding' : exon?.codingStatus ?? (guide.localStart < 32 ? 'promoter' : 'intron')
     const proteinPosition = exon?.proteinStart && exon.proteinEnd ? Math.round(((exon.proteinStart + exon.proteinEnd) / 2 / 149) * 100) : undefined
     const domain = gene.domains.find((item) => proteinPosition != null && proteinPosition >= (item.proteinStart / 149) * 100 && proteinPosition <= (item.proteinEnd / 149) * 100)
     const distanceFromTss = genomicStart - gene.transcriptionStartSite
@@ -87,7 +88,10 @@ export function createRankedGuides(
       offTargetCandidates: offTargets,
       warnings: [],
       explanation: '',
-      scoringModelMetadata: metadata,
+      scoringModelMetadata: {
+        ...metadata,
+        organismContext: `${gene.organismId} demonstration record; no organism-specific training`,
+      },
     }
     base.warnings = generateWarnings(base, experiment, { maximumCutDistance: 20, tssWindow, nucleaseId })
     return base
