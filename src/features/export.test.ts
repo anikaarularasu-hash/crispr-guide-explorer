@@ -13,6 +13,14 @@ const record = {
   assembly: 'GRCh38',
   gene: 'HBB',
   transcript: 'ENST-HBB-001',
+  targetLocation: {
+    assemblyId: gene.assembly,
+    chromosomeLabel: gene.chromosome,
+    sequenceAccession: gene.sequenceAccession,
+    start: gene.genomicStart,
+    end: gene.genomicEnd,
+    strand: gene.strand,
+  },
   nuclease: 'SpCas9',
   guide,
   mockData: true,
@@ -25,6 +33,8 @@ describe('CSV export', () => {
     expect(csv).toContain('guideSequence')
     expect(csv).toContain('activityModel')
     expect(csv).toContain('mockDataStatus')
+    expect(csv).toContain('sequenceAccession')
+    expect(csv).toContain('NC_000011.10')
     expect(csv).toContain('Demonstration data active')
   })
 

@@ -2,6 +2,7 @@ import type { ExportRecord } from '../types/crispr'
 
 const fields = [
   'projectName', 'date', 'experimentType', 'organism', 'assembly', 'gene', 'transcript', 'nuclease',
+  'chromosome', 'sequenceAccession', 'targetStart', 'targetEnd', 'targetStrand',
   'guideSequence', 'pam', 'strand', 'coordinates', 'cutPosition', 'gcContent', 'exon',
   'transcriptCoverage', 'activityScore', 'activityModel', 'specificityScore', 'offTargetCount',
   'highRiskOffTargets', 'experimentLocationScore', 'overallScore', 'warnings', 'explanation',
@@ -24,6 +25,11 @@ export function recordToRow(record: ExportRecord): Record<(typeof fields)[number
     gene: record.gene,
     transcript: record.transcript,
     nuclease: record.nuclease,
+    chromosome: record.targetLocation.chromosomeLabel,
+    sequenceAccession: record.targetLocation.sequenceAccession ?? '',
+    targetStart: record.targetLocation.start,
+    targetEnd: record.targetLocation.end,
+    targetStrand: record.targetLocation.strand,
     guideSequence: guide.sequence,
     pam: guide.pamSequence,
     strand: guide.strand,

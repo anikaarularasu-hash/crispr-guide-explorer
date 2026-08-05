@@ -23,17 +23,51 @@ export type NucleaseId = 'spcas9' | 'sniper-cas9' | 'spcas9-hf1' | 'espcas9' | '
 export type Strand = '+' | '-'
 export type WarningSeverity = 'information' | 'caution' | 'high'
 export type CodingStatus = 'coding' | 'utr' | 'intron' | 'promoter'
+export type OrganismCategory = 'mammals' | 'fish' | 'insects' | 'nematodes' | 'plants' | 'fungi' | 'bacteria' | 'synthetic'
+export type ExampleGeneCategory = 'blood_disorders' | 'cancer' | 'cardiovascular' | 'neurological' | 'muscle_disorders' | 'metabolic_liver' | 'lung_epithelial' | 'immune_system' | 'vision' | 'basic_research'
+export type GenomeOrganization = 'eukaryotic' | 'prokaryotic'
+export type DataProvenance = 'demonstration' | 'uploaded' | 'remote-reference'
+export type TargetInputMode = 'gene' | 'transcript' | 'genomic_region' | 'raw_sequence' | 'custom_genome'
+
+export interface GenomicLocation {
+  assemblyId: string
+  chromosomeLabel: string
+  sequenceAccession?: string
+  start: number
+  end: number
+  strand: Strand
+}
+
+export interface BiologicalTarget {
+  inputMode: TargetInputMode
+  organismId: string
+  assemblyId: string
+  geneId?: string
+  geneSymbol?: string
+  transcriptId?: string
+  location?: GenomicLocation
+  rawSequence?: string
+}
 
 export interface Organism {
-  id: 'human' | 'mouse'
+  id: string
+  ncbiTaxonId?: string
   scientificName: string
   commonName: string
+  category: OrganismCategory
+  genomeOrganization: GenomeOrganization
+  supportsTranscriptAnalysis: boolean
+  supportsAlternativeSplicing: boolean
+  annotationNote: string
   assemblies: GenomeAssembly[]
 }
 
 export interface GenomeAssembly {
-  id: 'GRCh38' | 'GRCm39'
+  id: string
   label: string
+  accession?: string
+  source: string
+  provenance: DataProvenance
 }
 
 export interface Exon {
@@ -65,6 +99,8 @@ export interface ProteinDomain {
 export interface Transcript {
   id: string
   geneId: string
+  organismId: string
+  assemblyId: string
   proteinCoding: boolean
   canonical: boolean
   exonCount: number
@@ -75,13 +111,21 @@ export interface Transcript {
 
 export interface Gene {
   id: string
-  symbol: 'HBB' | 'CFTR' | 'PCSK9' | 'TP53'
+  organismId: string
+  symbol: string
+  ensemblGeneId?: string
+  ncbiGeneId?: string
+  refSeqIds?: string[]
+  geneType: string
+  exampleCategory?: ExampleGeneCategory
   name: string
   chromosome: string
+  sequenceAccession?: string
   genomicStart: number
   genomicEnd: number
   strand: Strand
   assembly: GenomeAssembly['id']
+  genomeOrganization: GenomeOrganization
   transcriptIds: string[]
   sequence: string
   transcriptionStartSite: number
@@ -267,6 +311,7 @@ export interface ExportRecord {
   assembly: string
   gene: string
   transcript: string
+  targetLocation: GenomicLocation
   nuclease: string
   guide: RankedGuide
   mockData: boolean
@@ -274,11 +319,38 @@ export interface ExportRecord {
 }
 
 export interface SequenceProvider {
-  getSequence(geneId: string): Promise<string>
+  getSequence(request: { organismId: string; assemblyId: string; geneId: string }): Promise<string>
 }
 
 export interface TranscriptProvider {
-  getTranscripts(geneId: string): Promise<Transcript[]>
+  getTranscripts(request: { organismId: string; assemblyId: string; geneId: string }): Promise<Transcript[]>
+}
+
+export interface GeneAnnotationProvider {
+  getGenes(request: { organismId: string; assemblyId: string }): Promise<Gene[]>
+  resolveGenes(request: { organismId: string; assemblyId: string; query: string }): Promise<Gene[]>
+}
+
+export interface GeneProvider {
+  id: string
+  provenance: DataProvenance
+  searchGenes(request: { organismId: string; assemblyId: string; query: string; limit?: number }): Promise<Gene[]>
+  getGene(request: { organismId: string; assemblyId: string; geneId: string }): Promise<Gene | undefined>
+  getExampleGenes(request: { organismId: string; assemblyId: string }): Promise<Gene[]>
+}
+
+export interface GenomeDataProvider extends SequenceProvider, TranscriptProvider, GeneAnnotationProvider {
+  id: string
+  provenance: DataProvenance
+  getOrganisms(): Promise<Organism[]>
+}
+
+export interface CustomGenomeUpload {
+  organismName: string
+  assemblyName: string
+  fastaFile: File
+  annotationFile?: File
+  annotationFormat?: 'gtf' | 'gff3'
 }
 
 export interface ProteinAnnotationProvider {
