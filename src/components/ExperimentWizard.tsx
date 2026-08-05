@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   getGenesForAssembly,
   getGeneTranscripts,
+  exampleGeneCategoryLabels,
   organismCategoryLabels,
   organismCategoryOrder,
   organisms,
@@ -10,6 +11,7 @@ import {
 import { recommendNuclease } from '../biology/nucleaseRecommendation'
 import { extractSpCas9Guides } from '../biology/guideGeneration'
 import { geneLocation, validateBiologicalTarget } from '../biology/targeting'
+import { fetchGene, GeneApiError, type ApiGene } from '../services/geneApi'
 import type { BiologicalTarget, EditingPriority, ExperimentContext, ExperimentType, NucleaseId, SafetyContext, Strand, TargetInputMode } from '../types/crispr'
 import { NucleaseRecommendationCard } from './NucleaseRecommendationCard'
 
@@ -41,6 +43,8 @@ const experimentInfo: Record<ExperimentType, { title: string; description: strin
   crispri: { title: 'CRISPR interference', description: 'Prioritize transcriptional repression near a selected start site.' },
 }
 
+type NcbiLookupStatus = 'idle' | 'loading' | 'success' | 'not_found' | 'api_error' | 'organism_mismatch' | 'assembly_mismatch' | 'unsupported'
+
 export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { initialExperiment: ExperimentType; onCancel: () => void; onComplete: (setup: DesignSetup) => void }) {
   const [step, setStep] = useState(1)
   const [experiment, setExperiment] = useState(initialExperiment)
@@ -66,14 +70,15 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
   const [windowStart, setWindowStart] = useState(-400)
   const [windowEnd, setWindowEnd] = useState(-50)
   const [multipleGuides, setMultipleGuides] = useState(true)
+  const [ncbiGene, setNcbiGene] = useState<ApiGene | null>(null)
+  const [ncbiStatus, setNcbiStatus] = useState<NcbiLookupStatus>('idle')
+  const [ncbiError, setNcbiError] = useState('')
   const organism = organisms.find((item) => item.id === organismId)!
   const availableGenes = getGenesForAssembly(organismId, assemblyId)
   const gene = availableGenes.find((item) => item.id === geneId)
   const availableTranscripts = gene ? getGeneTranscripts(gene.id) : []
   const assemblyTranscripts = availableGenes.flatMap((item) => getGeneTranscripts(item.id))
   const assembly = organism.assemblies.find((item) => item.id === assemblyId)!
-  const geneMatches = targetInputMode === 'gene' ? resolveGeneRecords(organismId, assemblyId, geneQuery) : []
-  const selectedTranscript = availableTranscripts.find((item) => item.id === transcriptId)
   const rawGuides = targetInputMode === 'raw_sequence' && /^[ACGT\s]+$/i.test(rawSequence) ? extractSpCas9Guides(rawSequence.replace(/\s/g, '')).slice(0, 8) : []
   const biologicalTarget: BiologicalTarget = {
     inputMode: targetInputMode,
@@ -93,7 +98,11 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
   }
   const targetErrors = validateBiologicalTarget(biologicalTarget)
   const supportedDesignMode = targetInputMode === 'gene' || targetInputMode === 'transcript'
-  const canContinueTarget = supportedDesignMode && targetErrors.length === 0 && Boolean(gene) && (!organism.supportsTranscriptAnalysis || Boolean(transcriptId))
+  const canContinueTarget = supportedDesignMode
+    && (targetInputMode !== 'gene' || ncbiStatus === 'success')
+    && targetErrors.length === 0
+    && Boolean(gene)
+    && (!organism.supportsTranscriptAnalysis || Boolean(transcriptId))
   const nucleaseRecommendation = useMemo(() => recommendNuclease({
     context: experimentContext,
     priority: editingPriority,
@@ -105,6 +114,58 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
     setTranscriptId('')
     if (gene) setEditPosition(gene.genomicStart + 56)
   }, [geneId, gene])
+
+  useEffect(() => {
+    setNcbiGene(null)
+    setNcbiError('')
+
+    if (step !== 2 || targetInputMode !== 'gene') {
+      setNcbiStatus('idle')
+      return
+    }
+
+    const symbol = geneQuery.trim()
+    if (!organism.ncbiTaxonId) {
+      setNcbiStatus('unsupported')
+      return
+    }
+    if (!symbol || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,49}$/.test(symbol)) {
+      setNcbiStatus('idle')
+      return
+    }
+
+    const controller = new AbortController()
+    setNcbiStatus('loading')
+    const timer = window.setTimeout(async () => {
+      try {
+        const result = await fetchGene(symbol, organism.ncbiTaxonId!, assemblyId, controller.signal)
+        if (result.organism.taxonId !== organism.ncbiTaxonId) {
+          setNcbiStatus('organism_mismatch')
+          setNcbiError(`NCBI returned ${result.organism.scientificName}, but ${organism.scientificName} is selected.`)
+        } else if (!result.location || result.availability.location !== 'available') {
+          setNcbiStatus('assembly_mismatch')
+          setNcbiError(`NCBI found ${result.symbol}, but did not return a location for ${assembly.label}.`)
+        } else {
+          setNcbiGene(result)
+          setNcbiStatus('success')
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return
+        if (error instanceof GeneApiError && error.status === 404) {
+          setNcbiStatus('not_found')
+          setNcbiError(`NCBI could not find “${symbol}” for ${organism.scientificName} on ${assembly.label}.`)
+        } else {
+          setNcbiStatus('api_error')
+          setNcbiError(error instanceof Error ? error.message : 'The NCBI lookup failed unexpectedly.')
+        }
+      }
+    }, 350)
+
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [step, targetInputMode, geneQuery, organism.ncbiTaxonId, organism.scientificName, assemblyId, assembly.label])
 
   const changeOrganism = (nextOrganismId: string) => {
     const nextOrganism = organisms.find((item) => item.id === nextOrganismId)!
@@ -129,6 +190,13 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
     const matches = resolveGeneRecords(organismId, assemblyId, query)
     setGeneQuery(query)
     setGeneId(matches.length === 1 ? matches[0].id : '')
+    setTranscriptId('')
+  }
+
+  const changeGeneSelection = (nextGeneId: string) => {
+    const nextGene = availableGenes.find((item) => item.id === nextGeneId)
+    setGeneId(nextGene?.id ?? '')
+    setGeneQuery(nextGene?.symbol ?? '')
     setTranscriptId('')
   }
 
@@ -186,7 +254,7 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
         {step === 2 && (
           <fieldset>
             <legend>Select the biological target</legend>
-            <div className="data-notice"><b>Demonstration genomic data</b><span>Coordinates, sequences, annotations, and transcript structures on this screen are simulated.</span></div>
+            <div className="data-notice"><b>Real NCBI gene lookup + demonstration guide data</b><span>Gene identity and location come from NCBI. Transcript models, sequences, guide scores, and off-target results remain simulated.</span></div>
             <div className="form-grid">
               <label className="full-field">Target input mode
                 <select value={targetInputMode} onChange={(event) => { setTargetInputMode(event.target.value as TargetInputMode); setTranscriptId('') }}>
@@ -208,8 +276,8 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
                 </select>
               </label>
               {targetInputMode === 'gene' && <>
-                <label>Gene symbol or name<input value={geneQuery} onChange={(event) => changeGeneQuery(event.target.value)} placeholder="e.g., BRCA1" /></label>
-                {geneMatches.length > 1 && <label>Select matching gene record<select value={geneId} onChange={(event) => setGeneId(event.target.value)}><option value="">Choose a record…</option>{geneMatches.map((item) => <option value={item.id} key={item.id}>{item.symbol} — {item.name}</option>)}</select></label>}
+                <label>NCBI gene symbol<input value={geneQuery} onChange={(event) => changeGeneQuery(event.target.value)} placeholder="e.g., BRCA1" autoComplete="off" /></label>
+                <label>Demonstration gene for guide preview<select value={gene?.id ?? ''} onChange={(event) => changeGeneSelection(event.target.value)}><option value="">No demonstration guide record</option>{availableGenes.map((item) => <option value={item.id} key={item.id}>{item.symbol} — {item.name}</option>)}</select></label>
               </>}
               {targetInputMode === 'transcript' && <label>Transcript ID <span className="required">required</span><select value={transcriptId} onChange={(event) => changeTranscriptTarget(event.target.value)}><option value="">Choose a transcript…</option>{assemblyTranscripts.map((item) => <option value={item.id} key={item.id}>{item.id}</option>)}</select></label>}
               {targetInputMode === 'genomic_region' && <>
@@ -221,7 +289,7 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
               {targetInputMode === 'raw_sequence' && <label className="full-field">Raw DNA sequence <span className="required">required</span><textarea value={rawSequence} onChange={(event) => setRawSequence(event.target.value)} placeholder="Paste A, C, G, and T bases…" rows={5} /></label>}
               <label>Desired number of guides<input type="number" min="1" max="20" value={desiredGuides} onChange={(event) => setDesiredGuides(Number(event.target.value))} /></label>
               {targetInputMode === 'gene' && organism.supportsTranscriptAnalysis ? (
-                <label className="full-field">Transcript <span className="required">required</span>
+                <label className="full-field">Demonstration transcript for guide preview <span className="required">required</span>
                   <select aria-invalid={!transcriptId} value={transcriptId} onChange={(event) => setTranscriptId(event.target.value)}>
                     <option value="">Choose a transcript explicitly…</option>
                     {availableTranscripts.map((item) => <option value={item.id} key={item.id}>{item.id} {item.canonical ? '· canonical' : '· alternative'}</option>)}
@@ -231,31 +299,47 @@ export function ExperimentWizard({ initialExperiment, onCancel, onComplete }: { 
                 <div className="full-field prokaryote-mode"><b>Prokaryotic gene-feature mode</b><span>No transcript selection is required. GuideWise will use the selected gene/CDS feature and will not apply eukaryotic exon or alternative-splicing logic.</span></div>
               )}
             </div>
-            {(targetInputMode === 'gene' || targetInputMode === 'transcript') && <div className="genome-load-status" role="status">
+            {targetInputMode === 'gene' && <details className="gene-shortcuts"><summary>Browse educational example genes</summary><p>Optional shortcuts from the current demonstration catalog—not the limit of a future connected gene provider.</p><div>{(Object.entries(exampleGeneCategoryLabels) as Array<[keyof typeof exampleGeneCategoryLabels, string]>).map(([category, label]) => {
+              const examples = availableGenes.filter((item) => item.exampleCategory === category)
+              return examples.length ? <section key={category}><h4>{label}</h4><div>{examples.map((item) => <button type="button" key={item.id} className={item.id === gene?.id ? 'selected' : ''} onClick={() => changeGeneSelection(item.id)}>{item.symbol}</button>)}</div></section> : null
+            })}</div></details>}
+            {targetInputMode === 'gene' && <div className={`ncbi-lookup-state ${ncbiStatus}`} role={['not_found', 'api_error', 'organism_mismatch', 'assembly_mismatch'].includes(ncbiStatus) ? 'alert' : 'status'} aria-live="polite">
+              {ncbiStatus === 'idle' && <><b>Enter a gene symbol</b><span>GuideWise will query NCBI for the selected organism and assembly.</span></>}
+              {ncbiStatus === 'loading' && <><b>Searching NCBI…</b><span>Checking “{geneQuery.trim()}” for <i>{organism.scientificName}</i> on {assembly.label}.</span></>}
+              {ncbiStatus === 'success' && ncbiGene && <><b>NCBI gene verified</b><span>{ncbiGene.symbol} was returned for <i>{ncbiGene.organism.scientificName}</i>.</span></>}
+              {ncbiStatus === 'not_found' && <><b>Gene not found</b><span>{ncbiError} Check the official symbol and selected organism.</span></>}
+              {ncbiStatus === 'api_error' && <><b>NCBI lookup unavailable</b><span>{ncbiError} Demonstration metadata will not be substituted.</span></>}
+              {ncbiStatus === 'organism_mismatch' && <><b>Organism mismatch</b><span>{ncbiError} GuideWise rejected the response.</span></>}
+              {ncbiStatus === 'assembly_mismatch' && <><b>Assembly location unavailable</b><span>{ncbiError} GuideWise will not reuse coordinates from another assembly.</span></>}
+              {ncbiStatus === 'unsupported' && <><b>NCBI lookup unavailable for this target</b><span>This custom or synthetic organism does not have an NCBI taxonomy mapping.</span></>}
+            </div>}
+            {targetInputMode === 'transcript' && <div className="genome-load-status" role="status">
+              <span><small>MODE</small>Demonstration transcript</span>
               <span><small>ASSEMBLY</small>{assemblyId}</span>
-              <span><small>GENE ANNOTATION</small>{availableGenes.length} demo record{availableGenes.length === 1 ? '' : 's'} loaded</span>
-              <span><small>TRANSCRIPT MODEL</small>{organism.supportsTranscriptAnalysis ? `${availableTranscripts.length} loaded` : 'Not applied'}</span>
-              <span><small>CHROMOSOME SEQUENCE</small>{gene ? `${gene.chromosome} region loaded` : 'Unavailable'}</span>
+              <span><small>TRANSCRIPT MODEL</small>{organism.supportsTranscriptAnalysis ? `${availableTranscripts.length} demo records` : 'Not applied'}</span>
             </div>}
             <p className="organism-capability-note"><b>{organism.genomeOrganization === 'eukaryotic' ? 'Eukaryotic analysis' : 'Bacterial analysis'}:</b> {organism.annotationNote}</p>
-            {gene && (targetInputMode === 'gene' || targetInputMode === 'transcript') && <section className="target-summary" aria-labelledby="target-summary-heading">
-              <div><span className="overline">AUTOMATIC LOOKUP</span><h3 id="target-summary-heading">Target summary</h3></div>
+            {targetInputMode === 'gene' && ncbiStatus === 'success' && ncbiGene?.location && <section className="target-summary real-data-summary" aria-labelledby="target-summary-heading">
+              <div><span className="overline">LIVE NCBI DATA</span><h3 id="target-summary-heading">Target summary</h3></div>
               <dl>
-                <div><dt>Organism</dt><dd><i>{organism.scientificName}</i></dd></div><div><dt>Assembly</dt><dd>{assembly.label}</dd></div>
-                <div><dt>Gene</dt><dd>{gene.symbol} · {gene.name}</dd></div>
-                <div><dt>Chromosome <button className="metric-help" type="button" aria-label="About chromosome" title="GuideWise determines the chromosome automatically from the selected gene and genome assembly. Chromosome coordinates can differ between organisms and genome assemblies.">?</button></dt><dd>{gene.chromosome}{gene.sequenceAccession ? ` · ${gene.sequenceAccession}` : ''}</dd></div>
-                <div><dt>Coordinates</dt><dd>chr{gene.chromosome}:{gene.genomicStart.toLocaleString()}–{gene.genomicEnd.toLocaleString()}</dd></div><div><dt>Strand</dt><dd>{gene.strand === '+' ? 'plus (+)' : 'minus (−)'}</dd></div>
-                <div><dt>Transcript</dt><dd>{selectedTranscript?.id ?? (organism.supportsTranscriptAnalysis ? 'Select a transcript' : availableTranscripts[0]?.id ?? 'Not applicable')}</dd></div><div><dt>Exons</dt><dd>{selectedTranscript?.exonCount ?? (organism.supportsTranscriptAnalysis ? '—' : availableTranscripts[0]?.exonCount ?? '—')}</dd></div>
-                <div><dt>Coding status</dt><dd>{(selectedTranscript?.proteinCoding ?? availableTranscripts[0]?.proteinCoding) ? 'Protein-coding' : 'Noncoding / unknown'}</dd></div><div><dt>Transcription start site</dt><dd>{gene.transcriptionStartSite.toLocaleString()}</dd></div>
+                <div><dt>Official symbol</dt><dd>{ncbiGene.symbol}</dd></div><div><dt>Full gene name</dt><dd>{ncbiGene.name}</dd></div>
+                <div><dt>Organism</dt><dd><i>{ncbiGene.organism.scientificName}</i> · taxon {ncbiGene.organism.taxonId}</dd></div><div><dt>Assembly</dt><dd>{ncbiGene.location.assemblyName} · {ncbiGene.location.assemblyAccession}</dd></div>
+                <div><dt>Chromosome <button className="metric-help" type="button" aria-label="About chromosome" title="GuideWise determines the chromosome automatically from the NCBI gene record for the selected organism and assembly.">?</button></dt><dd>{ncbiGene.location.chromosome} · {ncbiGene.location.sequenceAccession}</dd></div>
+                <div><dt>Coordinates</dt><dd>{ncbiGene.location.sequenceAccession}:{ncbiGene.location.start.toLocaleString()}–{ncbiGene.location.end.toLocaleString()}</dd></div><div><dt>Strand</dt><dd>{ncbiGene.location.strand === '+' ? 'plus (+)' : 'minus (−)'}</dd></div>
+                <div><dt>Gene type</dt><dd>{ncbiGene.geneType}</dd></div><div><dt>Transcript count</dt><dd>{ncbiGene.transcriptCount ?? 'Not supplied by gene report'}</dd></div>
+                <div><dt>NCBI Gene ID</dt><dd>{ncbiGene.ncbiGeneId}</dd></div><div><dt>Ensembl gene ID</dt><dd>{ncbiGene.ensemblGeneIds.join(' · ') || 'Not supplied by NCBI'}</dd></div>
+                <div><dt>Aliases</dt><dd>{ncbiGene.aliases.join(' · ') || 'None supplied'}</dd></div><div><dt>Transcript and exon details</dt><dd>Not yet integrated</dd></div>
               </dl>
-              <p>Chromosome is location metadata, not a guide-quality score. Activity, specificity, target region, transcript structure, and experiment type determine ranking.</p>
+              {ncbiGene.summary && <p><b>NCBI summary:</b> {ncbiGene.summary}</p>}
+              <p>Source: {ncbiGene.source.provider} ({ncbiGene.source.apiVersion}) · retrieved {new Date(ncbiGene.source.retrievedAt).toLocaleString()}{ncbiGene.source.cached ? ' · cached response' : ''}.</p>
             </section>}
-            {targetInputMode === 'gene' && geneQuery && geneMatches.length === 0 && <p className="validation-message" role="alert">No gene named “{geneQuery}” was found in {assembly.label}. GuideWise will not guess or reuse coordinates from another assembly.</p>}
+            {targetInputMode === 'gene' && ncbiStatus === 'success' && !gene && <p className="validation-message" role="status">NCBI found this gene, but GuideWise has no local demonstration transcript or sequence for it. Real guide generation is not connected yet.</p>}
+            {targetInputMode === 'gene' && ncbiStatus === 'success' && gene && <div className="data-notice demo-design-notice"><b>Guide preview remains demonstration-only</b><span>The transcript selector and generated guides below use local simulated records; they are not derived from this NCBI response.</span></div>}
             {targetInputMode === 'raw_sequence' && <section className="raw-sequence-result"><b>{rawGuides.length} candidate SpCas9 guide{rawGuides.length === 1 ? '' : 's'} found on both DNA strands</b><p>PAM discovery works on this sequence, but GuideWise cannot invent chromosome location, exon annotations, transcript coverage, or genome-wide specificity until the sequence is mapped.</p>{rawGuides.length > 0 && <div>{rawGuides.map((guide) => <code key={`${guide.strand}-${guide.localStart}`}>{guide.sequence} · {guide.pamSequence} · {guide.strand}</code>)}</div>}</section>}
             {targetInputMode === 'genomic_region' && <>{targetErrors.map((error) => <p className="validation-message" role="alert" key={error}>{error}</p>)}<p className="field-help">Region lookup requires a sequence provider for {assembly.label}. This demonstration validates coordinates but does not fetch arbitrary chromosome intervals.</p></>}
             {targetInputMode === 'custom_genome' && <section className="custom-upload-mode"><b>Future custom genome workspace</b><p>Upload parsing and indexing are not enabled yet. Planned inputs preserve assembly identity and sequence accessions.</p><label>Genome FASTA<input type="file" accept=".fa,.fasta,.fna" disabled /></label><label>GFF3 or GTF annotation<input type="file" accept=".gff,.gff3,.gtf" disabled /></label></section>}
             {targetInputMode === 'gene' && organism.supportsTranscriptAnalysis && transcriptId ? (
-              <div className="transcript-summary">
+              <div className="transcript-summary" aria-label="Demonstration transcript details">
                 {(() => { const item = availableTranscripts.find((tx) => tx.id === transcriptId)!; return <><span><small>STATUS</small>{item.proteinCoding ? 'Protein coding' : 'Noncoding'}</span><span><small>EXONS</small>{item.exonCount}</span><span><small>CODING LENGTH</small>{item.codingSequenceLength} bp</span><span><small>CANONICAL</small>{item.canonical ? 'Yes (demo)' : 'No'}</span></> })()}
               </div>
             ) : targetInputMode === 'gene' && organism.supportsTranscriptAnalysis && gene ? <p className="validation-message">Select a transcript to continue. GuideWise will not silently choose one.</p> : null}

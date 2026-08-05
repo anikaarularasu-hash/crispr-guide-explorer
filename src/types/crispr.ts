@@ -23,7 +23,8 @@ export type NucleaseId = 'spcas9' | 'sniper-cas9' | 'spcas9-hf1' | 'espcas9' | '
 export type Strand = '+' | '-'
 export type WarningSeverity = 'information' | 'caution' | 'high'
 export type CodingStatus = 'coding' | 'utr' | 'intron' | 'promoter'
-export type OrganismCategory = 'mammals' | 'fish' | 'insects' | 'nematodes' | 'plants' | 'fungi' | 'bacteria'
+export type OrganismCategory = 'mammals' | 'fish' | 'insects' | 'nematodes' | 'plants' | 'fungi' | 'bacteria' | 'synthetic'
+export type ExampleGeneCategory = 'blood_disorders' | 'cancer' | 'cardiovascular' | 'neurological' | 'muscle_disorders' | 'metabolic_liver' | 'lung_epithelial' | 'immune_system' | 'vision' | 'basic_research'
 export type GenomeOrganization = 'eukaryotic' | 'prokaryotic'
 export type DataProvenance = 'demonstration' | 'uploaded' | 'remote-reference'
 export type TargetInputMode = 'gene' | 'transcript' | 'genomic_region' | 'raw_sequence' | 'custom_genome'
@@ -50,6 +51,7 @@ export interface BiologicalTarget {
 
 export interface Organism {
   id: string
+  ncbiTaxonId?: string
   scientificName: string
   commonName: string
   category: OrganismCategory
@@ -111,6 +113,11 @@ export interface Gene {
   id: string
   organismId: string
   symbol: string
+  ensemblGeneId?: string
+  ncbiGeneId?: string
+  refSeqIds?: string[]
+  geneType: string
+  exampleCategory?: ExampleGeneCategory
   name: string
   chromosome: string
   sequenceAccession?: string
@@ -322,6 +329,14 @@ export interface TranscriptProvider {
 export interface GeneAnnotationProvider {
   getGenes(request: { organismId: string; assemblyId: string }): Promise<Gene[]>
   resolveGenes(request: { organismId: string; assemblyId: string; query: string }): Promise<Gene[]>
+}
+
+export interface GeneProvider {
+  id: string
+  provenance: DataProvenance
+  searchGenes(request: { organismId: string; assemblyId: string; query: string; limit?: number }): Promise<Gene[]>
+  getGene(request: { organismId: string; assemblyId: string; geneId: string }): Promise<Gene | undefined>
+  getExampleGenes(request: { organismId: string; assemblyId: string }): Promise<Gene[]>
 }
 
 export interface GenomeDataProvider extends SequenceProvider, TranscriptProvider, GeneAnnotationProvider {

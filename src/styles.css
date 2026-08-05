@@ -17,6 +17,10 @@
 }
 
 @media (max-width: 760px) {
+  details.gene-shortcuts > div { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
   .target-summary dl { grid-template-columns: 1fr; }
   .custom-upload-mode label { width: 100%; margin: 0 0 10px; }
 }
@@ -143,6 +147,14 @@ h1, h2, h3, p { margin-top: 0; }
 .full-field { grid-column: 1 / -1; }.required { color: #b94e34; font-size: .6rem; text-transform: uppercase; }.optional { color: #899690; font-size: .62rem; }
 .check-field { display: flex; align-items: center; gap: 8px; font-weight: 600 !important; }.check-field input { accent-color: var(--green); }
 .validation-message { margin: 12px 0 0; color: #a34831; font-size: .72rem; }
+.ncbi-lookup-state { display: flex; gap: 14px; align-items: baseline; margin-top: 18px; padding: 15px 17px; border: 1px solid #cad8d1; background: #f5f9f7; color: #53675e; font-size: .72rem; }
+.ncbi-lookup-state b { color: var(--green); white-space: nowrap; }
+.ncbi-lookup-state.loading { border-color: #c9d6dc; background: #f3f8fa; }
+.ncbi-lookup-state.not_found, .ncbi-lookup-state.api_error, .ncbi-lookup-state.organism_mismatch, .ncbi-lookup-state.assembly_mismatch { border-color: #e3c2b8; background: #fff6f2; color: #873e2d; }
+.ncbi-lookup-state.not_found b, .ncbi-lookup-state.api_error b, .ncbi-lookup-state.organism_mismatch b, .ncbi-lookup-state.assembly_mismatch b { color: #a34831; }
+.ncbi-lookup-state.unsupported { border-color: #ded4b7; background: #fcf8e9; color: #665b39; }
+.real-data-summary { border-left: 4px solid var(--green); }
+.demo-design-notice { margin-top: 18px; }
 .transcript-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; padding: 18px; border: 1px solid #d8e2dd; background: #f8faf8; }
 .transcript-summary span { font-size: .78rem; font-weight: 700; }.transcript-summary small { display: block; margin-bottom: 4px; color: #809089; font-size: .55rem; letter-spacing: .1em; }
 .nuclease-note, .meaning-section { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 14px; color: #5b6e66; font-size: .75rem; line-height: 1.6; }
@@ -188,6 +200,7 @@ h1, h2, h3, p { margin-top: 0; }
 .target-summary > div:first-child { padding: 18px 20px 10px; }.target-summary h3 { margin: 4px 0 0; font: 500 1.35rem Georgia, serif; }
 .target-summary dl { display: grid; grid-template-columns: repeat(2, 1fr); margin: 0; padding: 0 20px 18px; }.target-summary dl div { padding: 10px 12px; border-top: 1px solid #dce6e1; }.target-summary dt { color: #77877f; font-size: .57rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }.target-summary dd { margin: 5px 0 0; color: #29483e; font-size: .72rem; }.target-summary > p { margin: 0; padding: 13px 20px; border-top: 1px solid #dce6e1; color: #65776f; font-size: .67rem; line-height: 1.55; }
 .raw-sequence-result, .custom-upload-mode { margin-top: 18px; border: 1px solid #cbd8d2; padding: 18px; background: #f8faf8; color: #52645d; font-size: .72rem; line-height: 1.55; }.raw-sequence-result p, .custom-upload-mode p { color: var(--muted); }.raw-sequence-result div { display: grid; gap: 7px; }.raw-sequence-result code { border: 1px solid #dce4e0; padding: 8px; background: white; color: var(--green); }.custom-upload-mode label { display: inline-block; width: calc(50% - 10px); margin-right: 10px; font-weight: 700; }.custom-upload-mode input { display: block; width: 100%; margin-top: 7px; }
+.gene-shortcuts { margin-top: 18px; border: 1px solid #d4dfda; padding: 15px 18px; background: #fafbf9; }.gene-shortcuts summary { color: var(--green); cursor: pointer; font-size: .75rem; font-weight: 800; }.gene-shortcuts > p { color: var(--muted); font-size: .68rem; }.gene-shortcuts > div { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }.gene-shortcuts section { border-top: 1px solid #e0e6e2; padding-top: 10px; }.gene-shortcuts h4 { margin: 0 0 8px; color: #65766f; font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; }.gene-shortcuts section div { display: flex; flex-wrap: wrap; gap: 6px; }.gene-shortcuts button { border: 1px solid #b8ccc3; border-radius: 99px; padding: 5px 9px; background: white; color: var(--green); font-size: .62rem; cursor: pointer; }.gene-shortcuts button.selected { background: var(--green); color: white; }
 .target-figure { margin: 0 0 24px; border: 1px solid var(--line); background: white; }
 .target-figure figcaption { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--line); }
 .target-figure figcaption h3 { margin: 3px 0 0; font: 500 1.2rem Georgia, serif; }.target-figure figcaption > span { color: #88958f; font-size: .62rem; }

@@ -5,23 +5,31 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "dev:frontend": "vite --host 127.0.0.1",
+    "dev:server": "tsx watch server/index.ts",
+    "dev:all": "node scripts/dev.mjs",
+    "start:server": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
     "@vitejs/plugin-react": "4.3.4",
-    "vite": "5.4.21",
-    "typescript": "5.6.3",
+    "express": "^5.2.1",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "typescript": "5.6.3",
+    "vite": "5.4.21"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.1.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.2",
     "@types/react": "18.3.18",
     "@types/react-dom": "18.3.5",
     "jsdom": "25.0.1",
+    "tsx": "^4.23.5",
     "vitest": "2.1.9"
   }
 }

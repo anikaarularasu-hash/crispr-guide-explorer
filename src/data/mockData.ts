@@ -1,6 +1,8 @@
 import type {
   Gene,
+  ExampleGeneCategory,
   GenomeDataProvider,
+  GeneProvider,
   Nuclease,
   Organism,
   OrganismCategory,
@@ -15,13 +17,14 @@ export const organismCategoryLabels: Record<OrganismCategory, string> = {
   plants: 'Plants',
   fungi: 'Fungi',
   bacteria: 'Bacteria',
+  synthetic: 'Synthetic constructs',
 }
 
-export const organismCategoryOrder: OrganismCategory[] = ['mammals', 'fish', 'insects', 'nematodes', 'plants', 'fungi', 'bacteria']
+export const organismCategoryOrder: OrganismCategory[] = ['mammals', 'fish', 'insects', 'nematodes', 'plants', 'fungi', 'bacteria', 'synthetic']
 
 export const organisms: Organism[] = [
   {
-    id: 'human', scientificName: 'Homo sapiens', commonName: 'Human', category: 'mammals', genomeOrganization: 'eukaryotic',
+    id: 'human', ncbiTaxonId: '9606', scientificName: 'Homo sapiens', commonName: 'Human', category: 'mammals', genomeOrganization: 'eukaryotic',
     supportsTranscriptAnalysis: true, supportsAlternativeSplicing: true,
     annotationNote: 'Transcript, exon, and isoform-aware analysis is enabled.',
     assemblies: [
@@ -30,52 +33,58 @@ export const organisms: Organism[] = [
     ],
   },
   {
-    id: 'mouse', scientificName: 'Mus musculus', commonName: 'Mouse', category: 'mammals', genomeOrganization: 'eukaryotic',
+    id: 'mouse', ncbiTaxonId: '10090', scientificName: 'Mus musculus', commonName: 'Mouse', category: 'mammals', genomeOrganization: 'eukaryotic',
     supportsTranscriptAnalysis: true, supportsAlternativeSplicing: true,
     annotationNote: 'Transcript, exon, and isoform-aware analysis is enabled.',
     assemblies: [{ id: 'GRCm39', label: 'GRCm39', accession: 'GCA_000001635.9', source: 'Genome Reference Consortium / Ensembl', provenance: 'demonstration' }],
   },
   {
-    id: 'rat', scientificName: 'Rattus norvegicus', commonName: 'Rat', category: 'mammals', genomeOrganization: 'eukaryotic',
+    id: 'rat', ncbiTaxonId: '10116', scientificName: 'Rattus norvegicus', commonName: 'Rat', category: 'mammals', genomeOrganization: 'eukaryotic',
     supportsTranscriptAnalysis: true, supportsAlternativeSplicing: true,
     annotationNote: 'Transcript, exon, and isoform-aware analysis is enabled.',
     assemblies: [{ id: 'mRatBN7.2', label: 'mRatBN7.2', accession: 'GCA_015227675.2', source: 'Ensembl reference assembly', provenance: 'demonstration' }],
   },
   {
-    id: 'zebrafish', scientificName: 'Danio rerio', commonName: 'Zebrafish', category: 'fish', genomeOrganization: 'eukaryotic',
+    id: 'zebrafish', ncbiTaxonId: '7955', scientificName: 'Danio rerio', commonName: 'Zebrafish', category: 'fish', genomeOrganization: 'eukaryotic',
     supportsTranscriptAnalysis: true, supportsAlternativeSplicing: true,
     annotationNote: 'Transcript, exon, and isoform-aware analysis is enabled.',
     assemblies: [{ id: 'GRCz11', label: 'GRCz11', accession: 'GCA_000002035.4', source: 'Genome Reference Consortium / Ensembl', provenance: 'demonstration' }],
   },
   {
-    id: 'fruit-fly', scientificName: 'Drosophila melanogaster', commonName: 'Fruit fly', category: 'insects', genomeOrganization: 'eukaryotic',
+    id: 'fruit-fly', ncbiTaxonId: '7227', scientificName: 'Drosophila melanogaster', commonName: 'Fruit fly', category: 'insects', genomeOrganization: 'eukaryotic',
     supportsTranscriptAnalysis: true, supportsAlternativeSplicing: true,
     annotationNote: 'Transcript, exon, and isoform-aware analysis is enabled.',
     assemblies: [{ id: 'BDGP6.46', label: 'BDGP6.46', source: 'FlyBase / Ensembl Metazoa', provenance: 'demonstration' }],
   },
   {
-    id: 'c-elegans', scientificName: 'Caenorhabditis elegans', commonName: 'C. elegans', category: 'nematodes', genomeOrganization: 'eukaryotic',
+    id: 'c-elegans', ncbiTaxonId: '6239', scientificName: 'Caenorhabditis elegans', commonName: 'C. elegans', category: 'nematodes', genomeOrganization: 'eukaryotic',
     supportsTranscriptAnalysis: true, supportsAlternativeSplicing: true,
     annotationNote: 'Transcript, exon, and isoform-aware analysis is enabled.',
     assemblies: [{ id: 'WBcel235', label: 'WBcel235', accession: 'GCA_000002985.3', source: 'WormBase / Ensembl Metazoa', provenance: 'demonstration' }],
   },
   {
-    id: 'arabidopsis', scientificName: 'Arabidopsis thaliana', commonName: 'Arabidopsis', category: 'plants', genomeOrganization: 'eukaryotic',
+    id: 'arabidopsis', ncbiTaxonId: '3702', scientificName: 'Arabidopsis thaliana', commonName: 'Arabidopsis', category: 'plants', genomeOrganization: 'eukaryotic',
     supportsTranscriptAnalysis: true, supportsAlternativeSplicing: true,
     annotationNote: 'Transcript, exon, and isoform-aware analysis is enabled.',
     assemblies: [{ id: 'TAIR10', label: 'TAIR10', accession: 'GCA_000001735.1', source: 'TAIR / Ensembl Plants', provenance: 'demonstration' }],
   },
   {
-    id: 'yeast', scientificName: 'Saccharomyces cerevisiae', commonName: 'Budding yeast', category: 'fungi', genomeOrganization: 'eukaryotic',
+    id: 'yeast', ncbiTaxonId: '4932', scientificName: 'Saccharomyces cerevisiae', commonName: 'Budding yeast', category: 'fungi', genomeOrganization: 'eukaryotic',
     supportsTranscriptAnalysis: true, supportsAlternativeSplicing: false,
     annotationNote: 'Exon analysis is available; extensive alternative-splicing logic is de-emphasized for this demonstration.',
     assemblies: [{ id: 'R64-1-1', label: 'R64-1-1', accession: 'GCA_000146045.2', source: 'Saccharomyces Genome Database / Ensembl Fungi', provenance: 'demonstration' }],
   },
   {
-    id: 'e-coli', scientificName: 'Escherichia coli', commonName: 'E. coli K-12 MG1655', category: 'bacteria', genomeOrganization: 'prokaryotic',
+    id: 'e-coli', ncbiTaxonId: '511145', scientificName: 'Escherichia coli', commonName: 'E. coli K-12 MG1655', category: 'bacteria', genomeOrganization: 'prokaryotic',
     supportsTranscriptAnalysis: false, supportsAlternativeSplicing: false,
     annotationNote: 'Prokaryotic mode uses gene/CDS features and does not apply eukaryotic exon or alternative-transcript coverage logic.',
     assemblies: [{ id: 'ASM584v2', label: 'ASM584v2', accession: 'GCF_000005845.2', source: 'NCBI RefSeq', provenance: 'demonstration' }],
+  },
+  {
+    id: 'reporters', scientificName: 'Synthetic reporter constructs', commonName: 'Educational reporters', category: 'synthetic', genomeOrganization: 'prokaryotic',
+    supportsTranscriptAnalysis: false, supportsAlternativeSplicing: false,
+    annotationNote: 'Synthetic intronless reporter mode; these records are not mapped to a natural organism assembly.',
+    assemblies: [{ id: 'Reporter-v1', label: 'Reporter constructs v1', source: 'GuideWise demonstration', provenance: 'demonstration' }],
   },
 ]
 
@@ -105,6 +114,11 @@ interface GeneSeed {
   sequenceAccession?: string
   genomicStart: number
   alternativeTranscripts: boolean
+  ensemblGeneId?: string
+  ncbiGeneId?: string
+  refSeqIds?: string[]
+  geneType?: string
+  exampleCategory?: ExampleGeneCategory
 }
 
 const geneSeeds: GeneSeed[] = [
@@ -123,6 +137,46 @@ const geneSeeds: GeneSeed[] = [
   { id: 'arabidopsis-pds3', organismId: 'arabidopsis', assembly: 'TAIR10', symbol: 'PDS3', name: 'Phytoene desaturation 3', chromosome: '4', genomicStart: 8_200_000, alternativeTranscripts: true },
   { id: 'yeast-ade2', organismId: 'yeast', assembly: 'R64-1-1', symbol: 'ADE2', name: 'Phosphoribosylaminoimidazole carboxylase', chromosome: 'XV', genomicStart: 560_000, alternativeTranscripts: false },
   { id: 'ecoli-lacz', organismId: 'e-coli', assembly: 'ASM584v2', symbol: 'lacZ', name: 'Beta-galactosidase', chromosome: 'chromosome', sequenceAccession: 'NC_000913.3', genomicStart: 360_000, alternativeTranscripts: false },
+  { id: 'hba1', organismId: 'human', assembly: 'GRCh38', symbol: 'HBA1', name: 'Hemoglobin subunit alpha 1', chromosome: '16', genomicStart: 10_000_100, alternativeTranscripts: true },
+  { id: 'hba2', organismId: 'human', assembly: 'GRCh38', symbol: 'HBA2', name: 'Hemoglobin subunit alpha 2', chromosome: '16', genomicStart: 10_001_100, alternativeTranscripts: true },
+  { id: 'bcl11a', organismId: 'human', assembly: 'GRCh38', symbol: 'BCL11A', name: 'BAF chromatin remodeling complex subunit BCL11A', chromosome: '2', genomicStart: 10_002_100, alternativeTranscripts: true },
+  { id: 'f8', organismId: 'human', assembly: 'GRCh38', symbol: 'F8', name: 'Coagulation factor VIII', chromosome: 'X', genomicStart: 10_003_100, alternativeTranscripts: true },
+  { id: 'f9', organismId: 'human', assembly: 'GRCh38', symbol: 'F9', name: 'Coagulation factor IX', chromosome: 'X', genomicStart: 10_004_100, alternativeTranscripts: true },
+  { id: 'brca2', organismId: 'human', assembly: 'GRCh38', symbol: 'BRCA2', name: 'BRCA2 DNA repair associated', chromosome: '13', genomicStart: 10_005_100, alternativeTranscripts: true },
+  { id: 'kras', organismId: 'human', assembly: 'GRCh38', symbol: 'KRAS', name: 'KRAS proto-oncogene, GTPase', chromosome: '12', genomicStart: 10_006_100, alternativeTranscripts: true },
+  { id: 'egfr', organismId: 'human', assembly: 'GRCh38', symbol: 'EGFR', name: 'Epidermal growth factor receptor', chromosome: '7', genomicStart: 10_007_100, alternativeTranscripts: true },
+  { id: 'myc', organismId: 'human', assembly: 'GRCh38', symbol: 'MYC', name: 'MYC proto-oncogene, bHLH transcription factor', chromosome: '8', genomicStart: 10_008_100, alternativeTranscripts: true },
+  { id: 'pten', organismId: 'human', assembly: 'GRCh38', symbol: 'PTEN', name: 'Phosphatase and tensin homolog', chromosome: '10', genomicStart: 10_009_100, alternativeTranscripts: true },
+  { id: 'ldlr', organismId: 'human', assembly: 'GRCh38', symbol: 'LDLR', name: 'Low density lipoprotein receptor', chromosome: '19', genomicStart: 10_010_100, alternativeTranscripts: true },
+  { id: 'apob', organismId: 'human', assembly: 'GRCh38', symbol: 'APOB', name: 'Apolipoprotein B', chromosome: '2', genomicStart: 10_011_100, alternativeTranscripts: true },
+  { id: 'lpa', organismId: 'human', assembly: 'GRCh38', symbol: 'LPA', name: 'Lipoprotein(a)', chromosome: '6', genomicStart: 10_012_100, alternativeTranscripts: true },
+  { id: 'angptl3', organismId: 'human', assembly: 'GRCh38', symbol: 'ANGPTL3', name: 'Angiopoietin like 3', chromosome: '1', genomicStart: 10_013_100, alternativeTranscripts: true },
+  { id: 'htt', organismId: 'human', assembly: 'GRCh38', symbol: 'HTT', name: 'Huntingtin', chromosome: '4', genomicStart: 10_014_100, alternativeTranscripts: true },
+  { id: 'snca', organismId: 'human', assembly: 'GRCh38', symbol: 'SNCA', name: 'Synuclein alpha', chromosome: '4', genomicStart: 10_015_100, alternativeTranscripts: true },
+  { id: 'app', organismId: 'human', assembly: 'GRCh38', symbol: 'APP', name: 'Amyloid beta precursor protein', chromosome: '21', genomicStart: 10_016_100, alternativeTranscripts: true },
+  { id: 'psen1', organismId: 'human', assembly: 'GRCh38', symbol: 'PSEN1', name: 'Presenilin 1', chromosome: '14', genomicStart: 10_017_100, alternativeTranscripts: true },
+  { id: 'sod1', organismId: 'human', assembly: 'GRCh38', symbol: 'SOD1', name: 'Superoxide dismutase 1', chromosome: '21', genomicStart: 10_018_100, alternativeTranscripts: true },
+  { id: 'mecp2', organismId: 'human', assembly: 'GRCh38', symbol: 'MECP2', name: 'Methyl-CpG binding protein 2', chromosome: 'X', genomicStart: 10_019_100, alternativeTranscripts: true },
+  { id: 'dmd', organismId: 'human', assembly: 'GRCh38', symbol: 'DMD', name: 'Dystrophin', chromosome: 'X', genomicStart: 10_020_100, alternativeTranscripts: true },
+  { id: 'smn1', organismId: 'human', assembly: 'GRCh38', symbol: 'SMN1', name: 'Survival of motor neuron 1', chromosome: '5', genomicStart: 10_021_100, alternativeTranscripts: true },
+  { id: 'smn2', organismId: 'human', assembly: 'GRCh38', symbol: 'SMN2', name: 'Survival of motor neuron 2', chromosome: '5', genomicStart: 10_022_100, alternativeTranscripts: true },
+  { id: 'myh7', organismId: 'human', assembly: 'GRCh38', symbol: 'MYH7', name: 'Myosin heavy chain 7', chromosome: '14', genomicStart: 10_023_100, alternativeTranscripts: true },
+  { id: 'pah', organismId: 'human', assembly: 'GRCh38', symbol: 'PAH', name: 'Phenylalanine hydroxylase', chromosome: '12', genomicStart: 10_024_100, alternativeTranscripts: true },
+  { id: 'ttr', organismId: 'human', assembly: 'GRCh38', symbol: 'TTR', name: 'Transthyretin', chromosome: '18', genomicStart: 10_025_100, alternativeTranscripts: true },
+  { id: 'g6pc', organismId: 'human', assembly: 'GRCh38', symbol: 'G6PC', name: 'Glucose-6-phosphatase catalytic subunit 1', chromosome: '17', genomicStart: 10_026_100, alternativeTranscripts: true },
+  { id: 'otc', organismId: 'human', assembly: 'GRCh38', symbol: 'OTC', name: 'Ornithine transcarbamylase', chromosome: 'X', genomicStart: 10_027_100, alternativeTranscripts: true },
+  { id: 'serpina1', organismId: 'human', assembly: 'GRCh38', symbol: 'SERPINA1', name: 'Serpin family A member 1', chromosome: '14', genomicStart: 10_028_100, alternativeTranscripts: true },
+  { id: 'ccr5', organismId: 'human', assembly: 'GRCh38', symbol: 'CCR5', name: 'C-C motif chemokine receptor 5', chromosome: '3', genomicStart: 10_029_100, alternativeTranscripts: true },
+  { id: 'il2rg', organismId: 'human', assembly: 'GRCh38', symbol: 'IL2RG', name: 'Interleukin 2 receptor subunit gamma', chromosome: 'X', genomicStart: 10_030_100, alternativeTranscripts: true },
+  { id: 'cd19', organismId: 'human', assembly: 'GRCh38', symbol: 'CD19', name: 'CD19 molecule', chromosome: '16', genomicStart: 10_031_100, alternativeTranscripts: true },
+  { id: 'pdcd1', organismId: 'human', assembly: 'GRCh38', symbol: 'PDCD1', name: 'Programmed cell death 1', chromosome: '2', genomicStart: 10_032_100, alternativeTranscripts: true },
+  { id: 'rpe65', organismId: 'human', assembly: 'GRCh38', symbol: 'RPE65', name: 'Retinoid isomerohydrolase RPE65', chromosome: '1', genomicStart: 10_033_100, alternativeTranscripts: true },
+  { id: 'cep290', organismId: 'human', assembly: 'GRCh38', symbol: 'CEP290', name: 'Centrosomal protein 290', chromosome: '12', genomicStart: 10_034_100, alternativeTranscripts: true },
+  { id: 'ush2a', organismId: 'human', assembly: 'GRCh38', symbol: 'USH2A', name: 'Usherin', chromosome: '1', genomicStart: 10_035_100, alternativeTranscripts: true },
+  { id: 'actb', organismId: 'human', assembly: 'GRCh38', symbol: 'ACTB', name: 'Actin beta', chromosome: '7', genomicStart: 10_036_100, alternativeTranscripts: true },
+  { id: 'gapdh', organismId: 'human', assembly: 'GRCh38', symbol: 'GAPDH', name: 'Glyceraldehyde-3-phosphate dehydrogenase', chromosome: '12', genomicStart: 10_037_100, alternativeTranscripts: true },
+  { id: 'reporter-gfp', organismId: 'reporters', assembly: 'Reporter-v1', symbol: 'GFP', name: 'Green fluorescent protein reporter', chromosome: 'GFP_construct', genomicStart: 1, alternativeTranscripts: false, geneType: 'synthetic reporter', exampleCategory: 'basic_research' },
+  { id: 'reporter-lacz', organismId: 'reporters', assembly: 'Reporter-v1', symbol: 'lacZ', name: 'Beta-galactosidase reporter', chromosome: 'lacZ_construct', genomicStart: 1, alternativeTranscripts: false, geneType: 'synthetic reporter', exampleCategory: 'basic_research' },
 ]
 
 function transcriptIdsFor(seed: GeneSeed): string[] {
@@ -171,10 +225,47 @@ function makeTranscripts(seed: GeneSeed): Transcript[] {
 
 export const transcripts: Transcript[] = geneSeeds.flatMap(makeTranscripts)
 
+const exampleCategories: Record<ExampleGeneCategory, string[]> = {
+  blood_disorders: ['HBB', 'HBA1', 'HBA2', 'BCL11A', 'F8', 'F9'],
+  cancer: ['TP53', 'BRCA1', 'BRCA2', 'KRAS', 'EGFR', 'MYC', 'PTEN'],
+  cardiovascular: ['PCSK9', 'LDLR', 'APOB', 'LPA', 'ANGPTL3'],
+  neurological: ['HTT', 'SNCA', 'APP', 'PSEN1', 'SOD1', 'MECP2'],
+  muscle_disorders: ['DMD', 'SMN1', 'SMN2', 'MYH7'],
+  metabolic_liver: ['PAH', 'TTR', 'G6PC', 'OTC'],
+  lung_epithelial: ['CFTR', 'SERPINA1'],
+  immune_system: ['CCR5', 'IL2RG', 'CD19', 'PDCD1'],
+  vision: ['RPE65', 'CEP290', 'USH2A'],
+  basic_research: ['GFP', 'lacZ', 'ACTB', 'GAPDH'],
+}
+
+export const exampleGeneCategoryLabels: Record<ExampleGeneCategory, string> = {
+  blood_disorders: 'Blood disorders', cancer: 'Cancer', cardiovascular: 'Cardiovascular', neurological: 'Neurological',
+  muscle_disorders: 'Muscle disorders', metabolic_liver: 'Metabolic and liver', lung_epithelial: 'Lung and epithelial disease',
+  immune_system: 'Immune system', vision: 'Vision', basic_research: 'Basic research and education',
+}
+
+const identifierMetadata: Record<string, { ensemblGeneId?: string; ncbiGeneId?: string; refSeqIds?: string[] }> = {
+  'human:HBB': { ensemblGeneId: 'ENSG00000244734', ncbiGeneId: '3043', refSeqIds: ['NM_000518.5'] },
+  'human:BRCA1': { ensemblGeneId: 'ENSG00000012048', ncbiGeneId: '672', refSeqIds: ['NM_007294.4'] },
+  'human:TP53': { ensemblGeneId: 'ENSG00000141510', ncbiGeneId: '7157', refSeqIds: ['NM_000546.6'] },
+  'human:CFTR': { ensemblGeneId: 'ENSG00000001626', ncbiGeneId: '1080', refSeqIds: ['NM_000492.4'] },
+  'human:PCSK9': { ensemblGeneId: 'ENSG00000169174', ncbiGeneId: '255738', refSeqIds: ['NM_174936.4'] },
+  'e-coli:lacZ': { ncbiGeneId: '945006', refSeqIds: ['NC_000913.3'] },
+}
+
+function exampleCategoryFor(seed: GeneSeed): ExampleGeneCategory | undefined {
+  if (seed.exampleCategory) return seed.exampleCategory
+  if (seed.organismId !== 'human' || seed.assembly !== 'GRCh38') return seed.symbol === 'lacZ' ? 'basic_research' : undefined
+  return (Object.entries(exampleCategories) as Array<[ExampleGeneCategory, string[]]>).find(([, symbols]) => symbols.includes(seed.symbol))?.[0]
+}
+
 export const genes: Gene[] = geneSeeds.map((seed, index) => ({
   id: seed.id,
   organismId: seed.organismId,
   symbol: seed.symbol,
+  ...identifierMetadata[`${seed.organismId}:${seed.symbol}`],
+  geneType: seed.geneType ?? 'protein-coding',
+  exampleCategory: exampleCategoryFor(seed),
   name: seed.name,
   chromosome: seed.chromosome,
   sequenceAccession: seed.sequenceAccession,
@@ -197,7 +288,9 @@ export function resolveGeneRecords(organismId: string, assemblyId: string, query
   const normalized = query.trim().toLocaleLowerCase()
   if (!normalized) return []
   return getGenesForAssembly(organismId, assemblyId).filter((item) =>
-    item.symbol.toLocaleLowerCase() === normalized || item.name.toLocaleLowerCase() === normalized,
+    [item.symbol, item.name, item.ensemblGeneId, item.ncbiGeneId, ...(item.refSeqIds ?? [])]
+      .filter(Boolean)
+      .some((value) => value!.toLocaleLowerCase().includes(normalized)),
   )
 }
 
@@ -216,6 +309,20 @@ export const demonstrationGenomeProvider: GenomeDataProvider = {
   },
   async getSequence({ organismId, assemblyId, geneId }) {
     return genes.find((item) => item.organismId === organismId && item.assembly === assemblyId && item.id === geneId)?.sequence ?? ''
+  },
+}
+
+export const demonstrationGeneProvider: GeneProvider = {
+  id: 'guidewise-demonstration-genes',
+  provenance: 'demonstration',
+  async searchGenes({ organismId, assemblyId, query, limit = 25 }: { organismId: string; assemblyId: string; query: string; limit?: number }) {
+    return resolveGeneRecords(organismId, assemblyId, query).slice(0, limit)
+  },
+  async getGene({ organismId, assemblyId, geneId }: { organismId: string; assemblyId: string; geneId: string }) {
+    return getGenesForAssembly(organismId, assemblyId).find((item) => item.id === geneId)
+  },
+  async getExampleGenes({ organismId, assemblyId }: { organismId: string; assemblyId: string }) {
+    return getGenesForAssembly(organismId, assemblyId).filter((item) => item.exampleCategory)
   },
 }
 

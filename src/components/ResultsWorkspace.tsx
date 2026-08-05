@@ -100,6 +100,7 @@ export function ResultsWorkspace({ setup, initialGuides, onBack }: { setup: Desi
         <div className="result-actions"><button className="secondary-button" onClick={() => downloadText('guidewise-results.csv', toCsv(exportRecords), 'text/csv')}>Export CSV</button><button className="secondary-button" onClick={() => downloadText('guidewise-results.json', JSON.stringify(exportRecords, null, 2), 'application/json')}>JSON</button></div>
       </div>
 
+      <div className="data-notice"><b>Demonstration guide results</b><span>These candidates use local simulated transcripts, sequences, scores, and off-target records. They were not biologically generated from the NCBI gene report.</span></div>
       <div className="scientific-callout"><b>No universally best guide</b><span>Rank {ranked[0]?.rank} is the best fit for the current configurable heuristic—not a guarantee. Change experiment type or weights and the order may change.</span></div>
       <div className={`organism-mode-callout ${organism.genomeOrganization}`}>
         <b>{organism.genomeOrganization === 'prokaryotic' ? 'Bacterial analysis mode' : 'Eukaryotic analysis mode'}</b>

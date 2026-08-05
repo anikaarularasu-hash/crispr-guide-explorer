@@ -21,7 +21,7 @@ The existing stack is preserved. Tailwind was not added because the project alre
 
 ## Run locally
 
-Requirements: Node.js 20 or later and npm.
+Requirements: Node.js 24 or later and npm.
 
 ```bash
 npm install
@@ -36,6 +36,40 @@ Run tests and the production build:
 npm test
 npm run build
 ```
+
+## Real NCBI gene API milestone
+
+GuideWise now includes a small TypeScript/Express backend that acts as a safe adapter between the browser and the official NCBI Datasets v2 API. It exposes:
+
+- `GET /api/health`
+- `GET /api/genes/:symbol?taxon=:taxon&assembly=:assembly`
+
+The gene endpoint validates inputs, uses the current non-deprecated NCBI `dataset_report` route, applies a request timeout, passes an optional API key, caches repeated requests in memory, and returns a normalized GuideWise gene object. Missing transcript, exon, or assembly data is explicitly marked unavailable rather than represented with invented values.
+
+Copy `.env.example` to `.env` if you want to configure an NCBI API key or change the timeout and cache lifetime. Never commit `.env`.
+
+Run both applications together:
+
+```bash
+npm run dev:all
+```
+
+Or run them separately in two terminals:
+
+```bash
+npm run dev:frontend
+npm run dev:server
+```
+
+The frontend remains at `http://127.0.0.1:5173`, while the API listens at `http://127.0.0.1:3001`. Vite proxies browser requests beginning with `/api` to the backend during development.
+
+Test a real BRCA1 lookup in PowerShell:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:3001/api/genes/BRCA1?taxon=9606&assembly=GRCh38"
+```
+
+This first milestone retrieves and normalizes gene-level metadata. It deliberately does not yet import product reports, transcript sequences, exon structures, or genome sequence for guide generation.
 
 ## Architecture
 
@@ -69,7 +103,9 @@ The target wizard groups built-in research organisms by mammals, fish, insects, 
 
 The included provider uses small, synthetic demonstration records rather than downloading complete reference genomes. Every record carries organism and assembly identifiers so data from different references cannot be mixed silently.
 
-For normal gene-based targeting, the user enters a gene symbol or name and GuideWise resolves the chromosome, sequence accession, genomic coordinates, strand, transcription start site, and matching transcripts from the selected organism-and-assembly annotation set. Chromosome is displayed as read-only context; it is not a beginner input or a guide-quality score. Unknown and ambiguous records are never resolved by guessing.
+For normal gene-based targeting, the user can search the selected organism-and-assembly catalog by partial symbol, full name, Ensembl gene ID, NCBI Gene ID, or available RefSeq identifier. GuideWise resolves the chromosome, sequence accession, genomic coordinates, strand, transcription start site, and matching transcripts from that scoped annotation set. Chromosome is displayed as read-only context; it is not a beginner input or a guide-quality score. Unknown and ambiguous records are never resolved by guessing.
+
+The `GeneProvider` interface separates gene search and retrieval from React. The demonstration provider includes optional educational shortcut groups for blood disorders, cancer, cardiovascular, neurological, muscle, metabolic/liver, lung/epithelial, immune, vision, and basic-research examples. These shortcuts are a curated mock catalog, not a claim that only those genes are supported by the provider architecture. Database identifiers are displayed only where the demonstration record supplies them, and disease associations are omitted because no real association source is connected.
 
 The optional targeting-mode selector also exposes transcript-ID, genomic-region, raw-sequence, and custom-genome paths. Genomic regions validate the sequence identifier and coordinate interval. Raw DNA uses the same two-strand SpCas9 PAM scanner but deliberately leaves chromosome, transcript, exon, and genome-wide specificity metadata unset. Arbitrary interval retrieval and custom FASTA plus GFF3/GTF parsing remain future provider integrations.
 
